@@ -1,87 +1,146 @@
-# デプロイガイド (GitHub Pages + ローカルバックエンド)
+# デプロイガイド（スタンドアロン版）
 
 **バージョン**: 1.0.0  
-**日付**: 2026-01-05  
+**日付**: 2026-1-5  
 **リポジトリ**: https://github.com/J1921604/Slide-Voice-Maker
 
-## アーキテクチャ概要
-- フロントエンド: 静的 `index.html` を GitHub Pages で配信
-- バックエンド: ローカル FastAPI (`src/server.py`)、音声生成と動画合成を担当
-- 通信: ブラウザから `http://127.0.0.1:8000` へアクセス（CORS不要の同一オリジンを推奨）
+---
+
+## 概要
+
+Slide Voice Maker スタンドアロン版は、**サーバー不要**でブラウザのみで動作するWebアプリケーションです。GitHub Pagesで公開されたindex.htmlをブラウザで開くだけで利用できます。
+
+---
+
+## アーキテクチャ
 
 ```mermaid
 flowchart LR
-    A[GitHub Pages
-    index.html] --> B[ブラウザ]
-    B --> C[ローカルFastAPI
-    http://127.0.0.1:8000]
-    C --> D[output/
-    WebM/MP4]
-    C --> E[input/
-    PDF・原稿.csv]
+    A[GitHub Pages<br/>index.html] --> B[ブラウザ]
+    B --> C[Web Speech API<br/>ローカルTTS]
+    B --> D[LocalStorage<br/>5-10MB]
 ```
+
+- **フロントエンド**: 静的 `index.html` を GitHub Pages で配信
+- **音声合成**: ブラウザ標準の Web Speech API（リアルタイムTTS）
+- **ストレージ**: LocalStorage（プロジェクトデータ自動保存）
+
+---
 
 ## GitHub Pages デプロイ手順
-1. `main` ブランチへ push すると `Deploy GitHub Pages` ワークフローが実行されます。
-2. ワークフローは `index.html`, `docs/`, `specs/`, `README.md` を `dist/` にコピーし、Pagesへ公開します。
-3. 公開URLは Actions 実行ログの `page_url` を参照してください。
 
-### 手動でdistを用意する場合
-```bash
-mkdir -p dist
-cp index.html dist/
-cp -r docs dist/docs
-cp -r specs dist/specs
-cp README.md dist/README.md
-```
-作成したdistを `actions/upload-pages-artifact` でアップロードし、`actions/deploy-pages` で公開します。
+### 自動デプロイ（推奨）
+
+1. `main` ブランチへ push すると `.github/workflows/pages.yml` ワークフローが自動実行されます
+2. ワークフローは `index.html`, `input/`, `docs/`, `specs/`, `README.md` を `dist/` にコピーし、GitHub Pagesへ公開します
+3. 公開URLは Actions 実行ログの `page_url` を参照してください
+
+**公開URL**: https://j1921604.github.io/Slide-Voice-Maker/
 
 ### 手動トリガー
-- GitHub Actions 画面で `Deploy GitHub Pages` を選択し、`Run workflow` をクリック。
 
-## ローカルバックエンド起動
-### ワンクリック（推奨）
-```powershell
-powershell -ExecutionPolicy Bypass -File start.ps1
+- GitHub Actions 画面で `Deploy GitHub Pages` を選択し、`Run workflow` をクリック
+
+---
+
+## ローカル実行
+
+### ワンクリック起動（推奨）
+
+#### Windows（バッチファイル）
+```batch
+run.bat
 ```
-- ポート8000を解放し、仮想環境を自動作成/起動、依存パッケージをインストール、FastAPIを起動してブラウザで `index.html` を開きます。
 
-### 手動起動
+#### Windows（PowerShell）
 ```powershell
-py -3.10 -m uvicorn src.server:app --host 127.0.0.1 --port 8000
-start http://127.0.0.1:8000/index.html
+.\run.ps1
 ```
 
-## 動作手順（フロントエンド）
-1. ヘッダー左の **PDF入力** でPDFを選択（input/に保存され、スライド展開されます）
-2. **原稿CSV入力** でCSVを読み込み、毎回 `input/原稿.csv` に上書き保存
-3. 解像度・字幕ON/OFF・動画形式(WebM/MP4)を選択
-4. **画像・音声生成** で `output/temp` をクリアしつつ素材を再生成
-5. **動画生成** で `output/<PDF名>.webm|mp4` を上書き生成（字幕ONならASS焼き込み）
-6. **動画出力** で output フォルダ内の動画をダウンロード
-7. **PPTX出力** や **原稿CSV出力** も利用可能
+どちらも `index.html` をデフォルトブラウザで開きます。
 
-## 環境変数（性能/画質チューニング）
-| 変数 | 既定値 | 説明 |
-|---|---|---|
-| USE_VP8 | 1 | `1`でVP8高速、`0`でVP9高品質 |
-| VP9_CPU_USED | 8 | VP9速度パラメータ (0-8) |
-| VP9_CRF | 40 | VP9品質（大きいほど軽量） |
-| OUTPUT_FPS | 15 | 出力FPS |
-| OUTPUT_MAX_WIDTH | 1280 | 出力最大幅（px） |
-| SLIDE_RENDER_SCALE | 1.5 | PDF→画像のスケール |
-| SILENCE_SLIDE_DURATION | 5 | 原稿なしスライド秒数 |
-| SUBTITLE_MARGIN_V | 10 | 字幕の縦マージン |
-| SUBTITLE_ALIGNMENT | 2 | 字幕の配置(ASS Alignment) |
+### 手動で開く
 
-## よくある質問
-- **Pages公開後にバックエンドが見つからない**: Pagesは静的配信のみです。ローカルでFastAPIを起動してください。
-- **動画生成が遅い**: `USE_VP8=1`, `OUTPUT_MAX_WIDTH` を下げる, `OUTPUT_FPS` を下げると高速化します。
-- **字幕が切り替わらない**: 句読点でチャンク分割し、最小セグメント幅を確保するASSを生成しています。CSVの句読点を確認してください。
+エクスプローラーで `index.html` をダブルクリックするだけで動作します。
+
+---
+
+## 動作手順
+
+### 初期画面
+アプリ起動時に以下のデフォルトファイルが自動読み込みされます：
+- `input/AIドリブン開発・教育体制の構築.pdf`
+- `input/原稿.csv`
+
+### 基本操作
+
+1. **PDF入力**: ヘッダー左の「PDFファイルを選択」ボタンでPDFをアップロード
+2. **原稿CSV入力**: 「原稿CSVを選択」ボタンでCSVを読み込み（`index,script`形式）
+3. **TTS再生**: 「TTS再生」ボタンでブラウザのWeb Speech APIで音声再生
+4. **原稿編集**: 下部のテキストエリアで原稿を編集（LocalStorageに自動保存）
+5. **CSV出力**: 「CSV出力」ボタンで編集した原稿をダウンロード
+6. **PPTX出力**: 「PPTX出力」ボタンでスライド画像をPowerPoint形式でダウンロード
+7. **プロジェクト保存/読込**: 「保存」「読込」ボタンでLocalStorageにプロジェクトデータを保存/復元
+
+---
+
+## 制限事項
+
+| 項目 | 制限内容 | 理由 |
+|------|----------|------|
+| 音声ファイル生成 | 不可（リアルタイム再生のみ） | Web Speech APIはリアルタイム再生専用 |
+| 動画生成 | 不可 | ブラウザ単独ではFFmpegが使えない |
+| inputフォルダ保存 | 不可 | ブラウザのセキュリティ制限 |
+| データ容量 | LocalStorage上限（5-10MB） | ブラウザのストレージ制限 |
+
+---
+
+## トラブルシューティング
+
+### PDFが読み込めない
+- PDFファイルが破損していないか確認してください
+- ファイルサイズが大きすぎる場合（50MB以上）は、ページ数を減らしてください
+- ブラウザのコンソール（F12）でエラーメッセージを確認してください
+
+### 音声が再生されない
+- ブラウザがWeb Speech APIに対応しているか確認してください（Chrome/Edge推奨）
+- ブラウザの音声設定を確認してください
+- 原稿欄にテキストが入力されているか確認してください
+
+### プロジェクトが保存されない
+- LocalStorageが有効になっているか確認してください（プライベートブラウジングモードでは無効）
+- ブラウザのストレージ上限（5-10MB）��超えていないか確認してください
+- ブラウザのコンソール（F12）でエラーメッセージを確認してください
+
+### デフォルトファイルが読み込めない
+- GitHub Pagesで公開されている場合、`input/`フォルダがデプロイされているか確認してください
+- ローカルで開いている場合、`input/`フォルダに以下のファイルが存在するか確認してください：
+  - `AIドリブン開発・教育体制の構築.pdf`
+  - `原稿.csv`
+
+---
+
+## 動作環境
+
+| 項目 | 要件 |
+|------|------|
+| OS | Windows 10/11, macOS, Linux |
+| ブラウザ | Chrome 90+, Edge 90+, Firefox 88+ |
+| メモリ | 4GB以上推奨 |
+| ストレージ | 100MB以上の空き容量 |
+
+### 推奨ブラウザ
+
+- **Chrome / Edge**: Web Speech API対応、最も安定動作
+- **Firefox**: 一部音声合成機能に制限あり
+- **Safari**: Web Speech API非対応（音声再生不可）
+
+---
 
 ## リンク
-- リポジトリ: https://github.com/J1921604/Slide-Voice-Maker
-- 完全仕様書: https://github.com/J1921604/Slide-Voice-Maker/blob/main/docs/%E5%AE%8C%E5%85%A8%E4%BB%95%E6%A7%98%E6%9B%B8.md
-- 仕様 (spec): https://github.com/J1921604/Slide-Voice-Maker/blob/main/specs/001-Slide-Voice-Maker/spec.md
-- 計画 (plan): https://github.com/J1921604/Slide-Voice-Maker/blob/main/specs/001-Slide-Voice-Maker/plan.md
-- タスク (tasks): https://github.com/J1921604/Slide-Voice-Maker/blob/main/specs/001-Slide-Voice-Maker/tasks.md
+
+- **GitHub Repository**: https://github.com/J1921604/Slide-Voice-Maker
+- **GitHub Pages**: https://j1921604.github.io/Slide-Voice-Maker/
+- **完全仕様書**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/docs/完全仕様書.md
+- **README**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/README.md
+- **タスク一覧**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/specs/001-Slide-Voice-Maker/tasks.md

@@ -173,6 +173,59 @@
                 }
             }, []);
 
+            // 初期画面でデフォルトファイルを自動読み込み
+            useEffect(() => {
+                const loadDefaultFiles = async () => {
+                    try {
+                        setStatusMessage('デフォルトファイルを読み込み中...');
+                        
+                        // デフォルトPDFを読み込み
+                        const pdfResponse = await fetch('input/AIドリブン開発・教育体制の構築.pdf');
+                        if (!pdfResponse.ok) throw new Error('デフォルトPDFが見つかりません');
+                        const pdfBlob = await pdfResponse.blob();
+                        const pdfArrayBuffer = await pdfBlob.arrayBuffer();
+                        
+                        // PDFを画像に変換
+                        const images = await convertPdfToImages(pdfArrayBuffer);
+                        const newSlides = images.map((image, index) => ({
+                            id: crypto.randomUUID(),
+                            image: image,
+                            script: '',
+                            audio: null,
+                            isGenerating: false
+                        }));
+                        setSlides(newSlides);
+                        setActiveSlideIndex(0);
+                        setSavedPdfName('AIドリブン開発・教育体制の構築.pdf');
+                        
+                        // デフォルトCSVを読み込み
+                        const csvResponse = await fetch('input/原稿.csv');
+                        if (!csvResponse.ok) throw new Error('デフォルトCSVが見つかりません');
+                        const csvBlob = await csvResponse.blob();
+                        const csvArrayBuffer = await csvBlob.arrayBuffer();
+                        
+                        // CSVをパース
+                        const parsedScripts = await parseCSVFromBuffer(csvArrayBuffer);
+                        const scriptMap = {};
+                        parsedScripts.forEach(item => {
+                            scriptMap[item.index] = item.script;
+                        });
+                        
+                        setSlides(prev => prev.map((slide, i) => ({
+                            ...slide,
+                            script: scriptMap[i] || ''
+                        })));
+                        
+                        setStatusMessage(`デフォルトファイル読み込み完了（${newSlides.length}スライド）`);
+                    } catch (err) {
+                        console.warn('デフォルトファイルの読み込みに失敗しました:', err);
+                        setStatusMessage('デフォルトファイルを読み込めませんでした。PDFとCSVを手動でアップロードしてください。');
+                    }
+                };
+                
+                loadDefaultFiles();
+            }, []);
+
             // Web Speech API音声読み上げ
             const speakText = (text) => {
                 if (!text || !text.trim()) return;

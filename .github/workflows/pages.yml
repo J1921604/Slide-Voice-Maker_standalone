@@ -21,6 +21,7 @@ jobs:
         run: |
           mkdir -p dist
           cp index.html dist/index.html
+          cp -r input dist/input || true
           cp -r docs dist/docs || true
           cp -r specs dist/specs || true
           cp README.md dist/README.md || true

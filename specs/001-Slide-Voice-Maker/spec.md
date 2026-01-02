@@ -1,245 +1,201 @@
 # 機能仕様書: Slide Voice Maker
 
-**機能ブランチ**: `001-Slide-Voice-Maker`
-**作成日**: 2026-01-05
-**バージョン**: 1.0.0
-**状態**: 承認済
+**機能ブランチ**: `001-Slide-Voice-Maker`  
+**作成日**: 2026-1-5  
+**バージョン**: 1.0.0  
+**状態**: 承認済  
+**リポジトリ**: https://github.com/J1921604/Slide-Voice-Maker
 
 ## 概要
 
-Slide Voice Makerは、PDFスライドと原稿CSVからAI音声ナレーション付きプレゼンテーション・動画を生成するツールである。
-
-### バージョン体系
-
-| バージョン | ファイル | 説明 |
-|------------|----------|------|
-| **スタンドアロン版** | `index.html` | サーバー不要、ブラウザのみで動作（Web Speech API）、動画生成不可 |
-| **バックエンド版** | `src/server.py` + `index.html` | Python FastAPI + Edge TTS + FFmpegで動画生成可能 |
+Slide Voice Makerは、PDFスライドと原稿CSVからブラウザ上でAI音声ナレーション付きプレゼンテーションを生成するスタンドアロンWebアプリケーションである。
 
 ### スタンドアロン版の仕様
 
 本バージョンは以下の機能を提供する:
 
-1. **PDF入力**: PDFファイルをブラウザ内で画像化してスライド表示
-2. **CSV入力**: 原稿CSVを読み込んで各スライドのナレーション設定
-3. **音声再生**: Web Speech APIでリアルタイムTTS再生（音声ファイル生成不可）
-4. **原稿編集**: ブラウザ上で原稿を編集してリアルタイムプレビュー
-5. **CSV出力**: 編集した原稿をCSVファイルとしてダウンロード
-6. **PPTX出力**: スライド画像をPowerPointファイル（PPTX）として出力
-7. **プロジェクト保存**: LocalStorageに自動保存（5-10MB制限）
-
-### バックエンド版の仕様
-
-本仕様では以下の機能を定義する:
-
-1. **出力動画の解像度選択**: ユーザーが動画出力時に解像度（720p/1080p/1440p）を選択可能にする
-2. **temp上書き更新**: 毎回の実行時にoutput/tempフォルダを上書き更新し、古いファイルを自動削除する
-
-加えて、運用上の必須要件として以下を定義する:
-
-- **機能（src/server.py起動時）**:
-  - PDF入力ボタン実行で、PDFファイルをアップロードしスライドとして展開
-    - 原稿CSV入力ボタン実行で、inputフォルダにCSVファイルを毎回上書き保存
-    - 解像度プルダウン選択（720p/1080p/1440p）- 画像解像度
-    - 再生速度プルダウン選択（0.5x〜2.0x）- 全スライドに適用
-    - 字幕ON/OFFトグル - 動画に字幕を埋め込むかどうかを選択（句読点分割+文字数比率タイミング）
-    - 画像・音声生成ボタン実行で、output/tempフォルダをクリアして画像・音声を上書き保存
-    - 動画生成ボタン実行で、output/に動画WebM/MP4を上書き更新（PDFと同名で保存）
-    - 原稿CSV出力ボタン実行で、編集した原稿をCSVでダウンロード
-    - 動画出力ボタン実行で、outputフォルダに保存した動画（WebM/MP4）を選択してダウンロード
-    - PPTX出力ボタン実行で、ブラウザ上のスライド画像をPPTXとしてダウンロード
-
-- **ホーム画面ヘッダーのPDF入力ボタンで常時アップロード可能**
+1. **デフォルトファイル自動読み込み**: 初期画面で`input/AIドリブン開発・教育体制の構築.pdf`と`input/原稿.csv`を自動読み込み
+2. **PDF入力**: PDFファイルをブラウザ内で画像化してスライド表示
+3. **CSV入力**: 原稿CSVを読み込んで各スライドのナレーション設定
+4. **音声再生**: Web Speech APIでリアルタイムTTS再生（音声ファイル生成不可）
+5. **原稿編集**: ブラウザ上で原稿を編集してリアルタイムプレビュー
+6. **CSV出力**: 編集した原稿をCSVファイルとしてダウンロード
+7. **PPTX出力**: スライド画像をPowerPointファイル（PPTX）として出力
+8. **プロジェクト保存**: LocalStorageに自動保存（5-10MB制限）
 
 ## プロセスフロー
 
 ```mermaid
 flowchart TD
-    A[PDF入力] --> B[input/保存 + スライド展開]
-    B --> C[原稿CSV入力<br>input/原稿.csv上書き]
-    C --> D[解像度/字幕/形式選択]
-    D --> E[画像・音声生成
-    output/tempクリア→素材保存]
-    E --> F[動画生成 WebM/MP4
-    字幕ONならASS焼き込み]
-    F --> G[output/<PDF名>.webm|mp4]
-    G --> H[動画出力ダウンロード]
-    B --> I[PPTX出力]
+    START[アプリ起動] --> AUTO[デフォルトファイル自動読み込み]
+    AUTO --> SLIDE[スライド表示]
+    SLIDE --> EDIT[原稿編集]
+    EDIT --> PLAY[音声再生プレビュー]
+    PLAY --> EXPORT[PPTX/CSV出力]
+    
+    USER[ユーザー入力] --> PDF[PDF入力]
+    USER --> CSV[CSV入力]
+    PDF --> SLIDE
+    CSV --> SLIDE
 ```
 
 ## システムアーキテクチャ
 
 ```mermaid
 flowchart TB
-    subgraph ユーザー入力
-        PDF[PDFファイル]
-        CSV[原稿CSV]
-        RES[解像度選択]
-    end
-
-    subgraph サーバー
-        SERVER[src/server.py]
-        MAIN[src/main.py]
-        PROC[src/processor.py]
-        TTS[Edge TTS]
+    subgraph デフォルトファイル
+        DEFPDF[input/AIドリブン開発・教育体制の構築.pdf]
+        DEFCSV[input/原稿.csv]
     end
 
     subgraph Web UI
         HTML[index.html]
         PDFJS[PDF.js]
-        CSVDEC[CSVデコード<br/>TextDecoder]
+        WEBSPEECH[Web Speech API]
+        LOCALSTORAGE[LocalStorage]
+        PPTXGEN[PptxGenJS]
+    end
+
+    subgraph ユーザー入力
+        USERPDF[ユーザーPDFファイル]
+        USERCSV[ユーザー原稿CSV]
     end
 
     subgraph 出力
-        TEMP[output/temp/]
-        WEBM[output/*.webm]
+        CSVOUT[CSVダウンロード]
+        PPTXOUT[PPTXダウンロード]
     end
 
-    PDF --> HTML
-    CSV --> HTML
-    RES --> HTML
-    HTML --> SERVER
-    SERVER --> MAIN
-    MAIN --> PROC
-    PROC --> TTS
-    PROC --> TEMP
-    PROC --> WEBM
+    DEFPDF -.初期読み込み.-> HTML
+    DEFCSV -.初期読み込み.-> HTML
+    USERPDF --> HTML
+    USERCSV --> HTML
+    HTML --> PDFJS
+    HTML --> WEBSPEECH
+    HTML --> LOCALSTORAGE
+    HTML --> PPTXGEN
+    HTML --> CSVOUT
+    HTML --> PPTXOUT
 ```
 
-### ユーザーストーリー1 - 出力解像度の選択（優先度: P1）
+### ユーザーストーリー1 - デフォルトファイル自動読み込み（優先度: P1）
 
-ユーザーは動画生成前に出力解像度を選択し、用途に応じた品質の動画を生成できる。
+ユーザーはアプリ起動時に自動的にデフォルトファイルが読み込まれ、すぐにプレゼンテーションを確認できる。
 
-**この優先度の理由**: プレゼンテーション用途や配信用途で異なる解像度が必要なため、最優先で実装する。
+**この優先度の理由**: 初回ユーザー体験の向上と、サンプルファイルの即座な確認のため最優先。
 
-**独立テスト**: 解像度選択UIで720pを選択し、動画生成後にファイルの実解像度が1280x720であることを確認する。
+**独立テスト**: index.htmlを開いた直後に、デフォルトPDFとCSVが自動読み込みされ、スライド表示されることを確認する。
 
 **受入シナリオ**:
 
 | 前提条件 | 操作 | 期待結果 |
 |----------|------|----------|
-| PDFと原稿CSVがinputフォルダにある | 解像度1080pを選択して動画生成 | 出力動画の解像度が1920x1080 |
-| 解像度未選択 | 動画生成を実行 | デフォルト1280x720で動画生成 |
+| input/にデフォルトファイルが存在する | index.htmlを開く | デフォルトファイルが自動読み込みされスライド表示 |
+| input/にデフォルトファイルが存在しない | index.htmlを開く | エラーメッセージ表示、手動入力は可能 |
 
 ---
 
-### ユーザーストーリー2 - temp上書き更新（優先度: P1）
+### ユーザーストーリー2 - ブラウザTTS音声再生（優先度: P1）
 
-ユーザーは毎回の実行時にtempフォルダが自動的にクリアされ、古いファイルが残らない。
+ユーザーはブラウザ上で原稿テキストを選択し、Web Speech APIで即座に音声再生できる。
 
-**この優先度の理由**: ディスク容量の圧迫防止と、混乱の原因となる古いファイルの除去のため最優先。
+**この優先度の理由**: リアルタイムプレビューによる編集効率向上のため最優先。
 
-**独立テスト**: 2回連続で動画生成を実行し、tempフォルダ内に1回目のファイルが残っていないことを確認する。
+**独立テスト**: スライドを選択し再生ボタンをクリックして、Web Speech APIで音声が再生されることを確認する。
 
 **受入シナリオ**:
 
 | 前提条件 | 操作 | 期待結果 |
 |----------|------|----------|
-| tempフォルダに過去の生成ファイルがある | 新しいPDFで動画生成 | 過去のファイルは削除され新しいファイルのみ存在 |
-| tempフォルダが存在しない | 動画生成を実行 | tempフォルダが作成されファイルが生成される |
+| 原稿が入力されている | 再生ボタンをクリック | Web Speech APIで音声再生される |
+| 原稿が空 | 再生ボタンをクリック | エラーメッセージ表示 |
 
 ---
 
 ### エッジケース
 
-- 解像度選択が無効な値の場合、デフォルト720pにフォールバック
-- tempフォルダ削除中にファイルがロックされている場合、エラーログを出力して続行
+- デフォルトファイルが存在しない場合、エラーメッセージを表示して手動入力を促す
+- LocalStorage容量超過時、古いプロジェクトデータを自動削除
 - 非常に大きなPDF（100ページ超）の場合、進捗表示を行う
+- Web Speech API非対応ブラウザの場合、警告メッセージを表示
 
 ## 機能要件
 
 | ID | 要件 | 優先度 |
 |----|------|--------|
-| FR-001 | システムは720p/1080p/1440pの解像度オプションを提供しなければならない | P1 |
-| FR-002 | システムはデフォルト解像度として720p（1280x720）を使用しなければならない | P1 |
-| FR-003 | システムは動画生成前にtempフォルダを自動的にクリアしなければならない | P1 |
-| FR-004 | システムは解像度設定を環境変数OUTPUT_MAX_WIDTHで制御可能にしなければならない | P1 |
-| FR-005 | システムはindex.html（Web UI）に解像度選択UIを追加しなければならない | P1 |
-| FR-006 | システムはPython版（src/main.py）にコマンドライン引数--resolutionを追加しなければならない | P1 |
-| FR-007 | システムはUTF-8エンコーディングで全ファイルを処理しなければならない | P1 |
-| FR-008 | システムは動画形式としてWebMとMP4を選択できなければならない | P1 |
-| FR-009 | システムはヘッダーからPDFアップロードを受け付け、input/へ保存しスライド展開しなければならない | P1 |
-| FR-010 | システムはPPTX出力を提供しなければならない | P2 |
-| FR-011 | システムは字幕を句読点で分割し、文字数比率でタイミングを計算しなければならない | P1 |
-| FR-012 | システムは字幕の最小セグメント時間を0.15秒以上とし、確実に切り替わるようにしなければならない | P1 |
-| FR-013 | システムは動画出力のFPSを30fpsとし、字幕切り替わりを確保しなければならない | P1 |
-| FR-014 | システムはFFmpegエンコード時に全CPUコアを活用しなければならない | P1 |
-
-## 解像度マッピング
-
-| 選択肢 | 幅（px） | 高さ（px） | 環境変数値 |
-|--------|----------|------------|------------|
-| 720p   | 1280     | 720        | 1280       |
-| 1080p  | 1920     | 1080       | 1920       |
-| 1440p  | 2560     | 1440       | 2560       |
+| FR-001 | システムは起動時にinput/AIドリブン開発・教育体制の構築.pdfを自動読み込みしなければならない | P1 |
+| FR-002 | システムは起動時にinput/原稿.csvを自動読み込みしなければならない | P1 |
+| FR-003 | システムはデフォルトファイル読み込み失敗時にエラーメッセージを表示しなければならない | P1 |
+| FR-004 | システムはPDFファイルをブラウザ内で画像化（scale=2.0）しなければならない | P1 |
+| FR-005 | システムは原稿CSVをRFC4180形式で解析しなければならない | P1 |
+| FR-006 | システムはWeb Speech APIでリアルタイム音声再生を提供しなければならない | P1 |
+| FR-007 | システムはLocalStorageにプロジェクトデータを自動保存しなければならない | P1 |
+| FR-008 | システムは編集した原稿をCSVファイルとしてダウンロード可能にしなければならない | P1 |
+| FR-009 | システムはスライド画像をPPTXファイル（16:9レイアウト）として出力しなければならない | P1 |
+| FR-010 | システムはUTF-8エンコーディングで全ファイルを処理しなければならない | P1 |
 
 ## 主要エンティティ
 
 ```mermaid
 erDiagram
-    Resolution {
-        string value "720p/1080p/1440p"
-        int width "出力幅(px)"
-        int height "出力高さ(px)"
-        string label "表示ラベル"
-    }
-
-    TempFolder {
-        string path "フォルダパス"
-        bool auto_clear_on_start "開始時自動クリア"
-    }
-
-    VideoOutput {
-        string filename "出力ファイル名"
-        Resolution resolution "解像度設定"
-        string codec "VP8/VP9"
-        float duration "動画長(秒)"
+    Project {
+        string name "プロジェクト名"
+        array slides "スライド配列"
+        string savedPdfName "保存されたPDF名"
     }
 
     Slide {
         int page_index "ページ番号"
-        string image_path "画像パス"
-        string audio_path "音声パス"
+        string image_data "画像データURL"
         string script_text "原稿テキスト"
         float duration "表示時間(秒)"
     }
 
-    VideoOutput ||--|| Resolution : "解像度を持つ"
-    VideoOutput ||--|{ Slide : "スライドを含む"
-    TempFolder ||--|{ Slide : "一時ファイルを格納"
+    LocalStorage {
+        string key "projectData"
+        string value "JSON文字列"
+        int size_limit "5-10MB"
+    }
+
+    Project ||--|{ Slide : "スライドを含む"
+    Project ||--|| LocalStorage : "保存される"
 ```
 
 ## 成功基準
 
 | ID | 基準 | 測定方法 |
 |----|------|----------|
-| SC-001 | 解像度選択から動画生成完了まで、スライド1枚あたり10秒以内 | 処理時間計測 |
-| SC-002 | temp上書きによりディスク使用量が前回生成分のみに制限される | ファイルサイズ確認 |
-| SC-003 | 選択した解像度と出力動画の実解像度が100%一致する | FFmpegログ解析で検証 |
-| SC-004 | Web UIで解像度選択が正常に動作する | E2Eテスト |
+| SC-001 | デフォルトファイル自動読み込みが3秒以内に完了する | 処理時間計測 |
+| SC-002 | Web Speech API音声再生が即座に開始される | 手動テスト |
+| SC-003 | LocalStorageへの自動保存が正常に動作する | E2Eテスト |
+| SC-004 | PPTX出力が正常に生成される | E2Eテスト |
 
 ## 技術スタック
 
 | 項目 | 技術 |
 |------|------|
-| 言語 | Python 3.10.11 |
-| 音声合成 | Edge TTS |
-| 動画編集 | MoviePy < 2.0 |
-| PDF処理 | PyMuPDF (fitz) |
-| 動画エンコード | FFmpeg (VP8/VP9) |
-| Web UI | React 18 + Tailwind CSS + PDF.js |
-| サーバー | FastAPI + Uvicorn |
+| UIフレームワーク | React 18 (CDN) |
+| スタイリング | Tailwind CSS (CDN) |
+| PDF処理 | PDF.js 3.11.174 |
+| 音声合成 | Web Speech API |
+| PPTX生成 | PptxGenJS |
+| ストレージ | LocalStorage API |
+| トランスパイル | Babel Standalone 7.28.5 |
 
 ## 依存関係
 
-```
-edge-tts
-moviepy<2.0
-pymupdf
-pandas
-imageio-ffmpeg
-Pillow
-requests
-pytest
+すべての依存関係はCDN経由で提供され、追加のインストールは不要:
 
-```
+- React 18: `https://unpkg.com/react@18/umd/react.production.min.js`
+- React DOM 18: `https://unpkg.com/react-dom@18/umd/react-dom.production.min.js`
+- Babel Standalone 7.28.5: `https://unpkg.com/@babel/standalone@7.28.5/babel.min.js`
+- Tailwind CSS: `https://cdn.tailwindcss.com`
+- PDF.js 3.11.174: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js`
+- PptxGenJS: `https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js`
+
+## リンク
+
+- **GitHub Repository**: https://github.com/J1921604/Slide-Voice-Maker
+- **GitHub Pages**: https://j1921604.github.io/Slide-Voice-Maker/
+- **完全仕様書**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/docs/完全仕様書.md
+- **README**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/README.md

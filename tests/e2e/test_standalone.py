@@ -44,7 +44,7 @@ def test_standalone_index_html_has_required_cdn_libraries():
         "unpkg.com/react-dom@18",  # ReactDOM
         "unpkg.com/@babel/standalone",  # Babel
         "cdnjs.cloudflare.com/ajax/libs/pdf.js",  # PDF.js
-        "cdn.jsdelivr.net/npm/pptxgenjs",  # PptxGenJS
+        "unpkg.com/pptxgenjs",  # PptxGenJS
         "cdn.tailwindcss.com",  # Tailwind CSS
     ]
     
@@ -64,7 +64,7 @@ def test_standalone_index_html_has_web_speech_api():
     assert "SpeechSynthesisUtterance" in content, "SpeechSynthesisUtterance が使用されていません"
 
 
-@pytest.mark name
+@pytest.mark.e2e
 def test_standalone_index_html_has_localstorage():
     """LocalStorageの使用が確認できることを確認"""
     repo_root = Path(__file__).resolve().parents[2]
@@ -165,7 +165,7 @@ def test_standalone_index_html_valid_html():
     assert "<!DOCTYPE html>" in content, "DOCTYPE宣言が見つかりません"
     assert "<html" in content, "<html>タグが見つかりません"
     assert "<head>" in content, "<head>タグが見つかりません"
-    assert "<body>" in content, "<body>タグが見つかりません"
+    assert "<body" in content, "<body>タグが見つかりません"
     assert "</html>" in content, "</html>閉じタグが見つかりません"
     
     # Reactルート要素の存在確認
@@ -182,3 +182,35 @@ def test_standalone_index_html_meta_charset_utf8():
     # charset=UTF-8 の設定を確認
     assert 'charset="UTF-8"' in content or "charset='UTF-8'" in content or 'charset="utf-8"' in content, \
         "UTF-8エンコーディングが設定されていません"
+
+
+@pytest.mark.e2e
+def test_standalone_index_html_has_default_file_loading():
+    """デフォルトファイル自動読み込み機能が実装されていることを確認"""
+    repo_root = Path(__file__).resolve().parents[2]
+    index_path = repo_root / "index.html"
+    content = index_path.read_text(encoding="utf-8")
+    
+    # useEffectでデフォルトファイル読み込みを検索
+    assert "useEffect" in content, "useEffect が使用されていません"
+    assert "AIドリブン開発・教育体制の構築.pdf" in content, \
+        "デフォルトPDFファイル名が見つかりません"
+    assert "原稿.csv" in content, "デフォルトCSVファイル名が見つかりません"
+    assert "fetch" in content, "fetch API が使用されていません"
+
+
+@pytest.mark.e2e
+def test_default_files_exist():
+    """デフォルトファイルが存在することを確認"""
+    repo_root = Path(__file__).resolve().parents[2]
+    input_dir = repo_root / "input"
+    
+    # デフォルトPDFファイルの存在確認
+    default_pdf = input_dir / "AIドリブン開発・教育体制の構築.pdf"
+    assert default_pdf.exists(), f"デフォルトPDFファイルが存在しません: {default_pdf}"
+    assert default_pdf.is_file(), f"デフォルトPDFがファイルではありません: {default_pdf}"
+    
+    # デフォルトCSVファイルの存在確認
+    default_csv = input_dir / "原稿.csv"
+    assert default_csv.exists(), f"デフォルトCSVファイルが存在しません: {default_csv}"
+    assert default_csv.is_file(), f"デフォルトCSVがファイルではありません: {default_csv}"
