@@ -1,258 +1,256 @@
-# Slide Voice Maker
-
-PDFスライドと原稿CSVから、AI音声ナレーション付き動画（WebM）を自動生成するツールです。
+# Slide Voice Maker（スタンドアロン版）
 
 **バージョン**: 1.0.0  
 **日付**: 2026-01-05  
 **リポジトリ**: https://github.com/J1921604/Slide-Voice-Maker
 
-## 📦 機能概要
+---
 
-```mermaid
-flowchart LR
-    A[PDFアップロード] --> B[スライド展開]
-    C[原稿CSV入力] --> B
-    B --> D[画像・音声生成<br/>output/temp]
-    D --> E[動画生成<br/>WebM/MP4]
-    E --> F[ダウンロード]
-    B --> G[PPTX出力]
-```
+## 概要
+
+Slide Voice Makerは、PDFスライドと原稿CSVから、**ブラウザ上で音声（Web Speech API）付きプレゼンテーション**を作成できるツールです。
 
 ### 主要機能
 
 | 機能 | 説明 |
 |------|------|
-| **PDF入力** | PDFファイルをアップロードしスライドとして展開 |
-| **原稿CSV入力** | inputフォルダにCSVファイルを上書き保存 |
-| **解像度選択** | 720p/1080p/1440pから選択（画像解像度） |
-| **再生速度** | 0.5x〜2.0xで音声再生速度を調整 |
-| **字幕ON/OFF** | 動画に字幕を埋め込むかどうかを選択 |
-| **画像・音声生成** | Edge TTSでAI音声を生成、output/tempに画像・音声を保存 |
-| **動画生成** | output/tempから動画WebM/MP4を生成（PDFと同名で保存） |
-| **原稿CSV出力** | 編集した原稿をCSVでダウンロード |
-| **動画出力** | outputフォルダから選択したWebM/MP4をダウンロード |
-| **PPTX出力** | ブラウザ上でスライド画像をPPTX化してダウンロード |
+| PDF入力 | PDFファイルをアップロードしてスライド画像に変換 |
+| CSV入力 | 原稿CSVを読み込んで各スライドのナレーション原稿を設定 |
+| 音声再生 | Web Speech APIでブラウザ上で音声を再生（リアルタイム） |
+| 原稿編集 | ブラウザ上で原稿を編集してリアルタイムプレビュー |
+| CSV出力 | 編集した原稿をCSVファイルとしてダウンロード |
+| PPTX出力 | スライド画像をPowerPointファイル（PPTX）として出力 |
+| プロジェクト保存 | LocalStorageにプロジェクトデータを自動保存 |
 
-## 🚀 クイックスタート
+### スタンドアロン版の特徴
 
-### 1. 環境準備
+- ✅ **サーバー不要**: index.htmlをブラウザで開くだけで動作
+- ✅ **インストール不要**: Python/Node.js等のランタイム不要
+- ✅ **クロスプラットフォーム**: Windows/Mac/Linux対応
+- ✅ **オフライン動作**: CDNリソースがキャッシュされれば完全オフライン可能
 
-```bash
-# Python 3.10.11で仮想環境を作成
-py -3.10 -m venv .venv
-.venv\Scripts\activate
+### 制限事項
 
-# 依存パッケージをインストール
-pip install -r requirements.txt
-```
+| 項目 | 制限内容 | 理由 |
+|------|----------|------|
+| 音声ファイル生成 | 不可（リアルタイム再生のみ） | Web Speech APIはリアルタイム再生専用 |
+| 動画生成 | 不可 | ブラウザ単独ではFFmpegが使えない |
+| inputフォルダ保存 | 不可 | ブラウザのセキュリティ制限 |
+| データ容量 | LocalStorage上限（5-10MB） | ブラウザのストレージ制限 |
 
-### 2. ワンクリック起動
+---
 
-```powershell
-# start.ps1を右クリック→「PowerShellで実行」、または
-powershell -ExecutionPolicy Bypass -File start.ps1
-```
+## 使い方
 
-### 3. 手動でサーバー起動
+### 1. ファイルを開く
 
-```bash
-py -3.10 -m uvicorn src.server:app --host 127.0.0.1 --port 8000
-```
+ブラウザで `index.html` を開きます：
 
-### 4. ブラウザでアクセス
+- **ローカルファイル**: エクスプローラーからダブルクリック
+- **GitHub Pages**: [https://j1921604.github.io/Slide-Voice-Maker/](https://j1921604.github.io/Slide-Voice-Maker/)
+- **ローカルサーバー**: PowerShellで `start.ps1` を実行（バックエンド版）
 
-```
-http://127.0.0.1:8000
-```
+### 2. PDFをアップロード
 
-### 4. 動画生成手順
+1. ヘッダー左の **「PDFファイルを選択」** ボタンをクリック
+2. PDFファイルを選択
+3. 自動的にスライド画像に変換されて表示されます
 
-1. **PDFアップロード**: 「PDF入力」でPDFをアップロード（input/にも保存）
-2. **原稿CSV読み込み**: 「原稿CSV入力」でCSVを読み込み、毎回input/原稿.csvに上書き保存
-3. **解像度/字幕/形式選択**: 720p/1080p/1440p・字幕ON/OFF・WebM/MP4を選択
-4. **画像・音声生成**: 「画像・音声生成」でoutput/tempをクリアし素材を再生成
-5. **動画生成**: 「動画生成」でoutput/にPDF同名のWebM/MP4を出力
-6. **ダウンロード**: 「動画出力」で保存済みWebM/MP4をダウンロード、「原稿CSV出力」「PPTX出力」も利用可
+### 3. 原稿CSVをアップロード（オプション）
 
-### CLIで直接実行
-
-```bash
-# 基本実行
-py -3.10 src\main.py
-
-# 解像度指定（720p/1080p/1440p）
-py -3.10 src\main.py --resolution 1080p
-
-# フルオプション指定
-py -3.10 src\main.py --input input --output output --script input\原稿.csv --resolution 1080p
-```
-
-## 🎥 解像度オプション
-
-| オプション | 解像度 | 用途 |
-|-----------|--------|------|
-| `720p` | 1280×720 | Web配信、ファイルサイズ優先（デフォルト） |
-| `1080p` | 1920×1080 | プレゼンテーション、標準品質 |
-| `1440p` | 2560×1440 | 高品質、大画面表示 |
-
-## 📋 必要条件
-
-- **Python 3.10.11** (推奨)
-- **FFmpeg** (imageio-ffmpegで自動インストール)
-- 依存パッケージ: `pip install -r requirements.txt`
-
-## 📁 ファイル構成
-
-```
-Slide-Voice-Maker/
-├── index.html          # WebアプリUI（GitHub Pages静的配信対応）
-├── start.ps1           # ワンクリック起動スクリプト
-├── requirements.txt    # Python依存パッケージ
-├── pytest.ini          # pytest設定
-├── input/
-│   ├── *.pdf           # 入力PDFファイル
-│   └── 原稿.csv        # ナレーション原稿
-├── output/
-│   ├── *.webm          # 生成された動画（MP4も対応）
-│   └── temp/           # 一時ファイル（自動クリア）
-├── src/
-│   ├── main.py         # CLIエントリポイント
-│   ├── processor.py    # PDF処理・動画生成
-│   └── server.py       # FastAPIサーバー
-├── tests/
-│   └── e2e/            # E2Eテスト
-├── docs/               # ドキュメント
-└── specs/              # 仕様書
-```
-
-## 📝 原稿CSV形式
+#### CSV形式
 
 ```csv
 index,script
-0,"最初のスライドの原稿テキストをここに記載します。"
-1,"2番目のスライドの原稿です。複数行も可能です。"
-2,"3番目のスライドの原稿。"
+0,こんにちは、スライド1ページ目の原稿です。
+1,2ページ目の原稿はここに書きます。
+2,3ページ目も同様です。
 ```
 
-- **index**: スライド番号（0から開始）
-- **script**: 読み上げ原稿テキスト
-- **文字コード**: UTF-8（BOM付き推奨）、Shift_JIS、EUC-JP対応
+- `index`: 0始まりのページ番号（0 = 1ページ目）
+- `script`: そのページの読み上げ原稿
 
-## ⚙️ 環境変数設定
+#### アップロード手順
 
-動画生成のパラメータを環境変数で調整できます：
+1. ヘッダーの **「原稿CSVを選択」** ボタンをクリック
+2. CSVファイルを選択
+3. 各スライドに原稿が自動設定されます
 
-| 変数名 | デフォルト | 説明 |
-|--------|-----------|------|
-| `USE_VP8` | `1` | VP8使用（高速）。`0`でVP9（高品質）。 |
-| `VP9_CPU_USED` | `8` | エンコード速度（0-8、大きいほど高速） |
-| `VP9_CRF` | `40` | 品質（大きいほど低品質・高速） |
-| `OUTPUT_FPS` | `30` | 出力FPS（字幕切り替わり確保のため30fps推奨） |
-| `OUTPUT_MAX_WIDTH` | `1280` | 出力最大幅（px） |
-| `SLIDE_RENDER_SCALE` | `1.5` | PDF→画像の解像度倍率 |
-| `SILENCE_SLIDE_DURATION` | `5` | 原稿なしスライドの表示秒数 |
-| `SUBTITLE_MARGIN_V` | `10` | 字幕の縦マージン（下寄せ調整） |
-| `SUBTITLE_ALIGNMENT` | `2` | 字幕配置（2=bottom-center） |
+### 4. 音声を再生
 
-## ✅ テスト
+1. サイドバーでスライドをクリック
+2. 原稿欄の **「▶ 音声を再生」** ボタンをクリック
+3. ブラウザのWeb Speech APIで音声が再生されます
 
-```bash
-# E2Eテスト（解像度・非空WebM/MP4）
-py -3.10 -m pytest -m e2e -v
+> **注意**: 初回再生時にブラウザが音声合成の準備をするため、1-2秒かかる場合があります。
 
-# バックエンドE2Eテスト
-py -3.10 -m pytest tests/e2e/test_local_backend.py -v
+### 5. 原稿を編集
 
-# 解像度E2Eテスト
-py -3.10 -m pytest tests/e2e/test_resolution.py -v
+1. 原稿欄のテキストエリアで直接編集
+2. 編集内容は自動的にLocalStorageに保存されます
+3. **「▶ 音声を再生」** で編集後の音声を確認できます
+
+### 6. エクスポート
+
+#### 原稿CSVをダウンロード
+
+1. ヘッダーの **「原稿CSV出力」** ボタンをクリック
+2. `原稿.csv` がダウンロードされます
+
+#### PowerPointファイルをダウンロード
+
+1. ヘッダーの **「PPTX出力」** ボタンをクリック
+2. スライド画像を含むPPTXファイルがダウンロードされます
+
+---
+
+## 動作環境
+
+| 項目 | 要件 |
+|------|------|
+| OS | Windows 10/11, macOS, Linux |
+| ブラウザ | Chrome 90+, Edge 90+, Firefox 88+ |
+| メモリ | 4GB以上推奨 |
+| ストレージ | 100MB以上の空き容量 |
+
+### 推奨ブラウザ
+
+- **Chrome / Edge**: Web Speech API対応、最も安定動作
+- **Firefox**: 一部音声合成機能に制限あり
+- **Safari**: Web Speech API非対応（音声再生不可）
+
+---
+
+## トラブルシューティング
+
+### PDFが読み込めない
+
+- PDFファイルが破損していないか確認してください
+- ファイルサイズが大きすぎる場合（50MB以上）は、ページ数を減らしてください
+- ブラウザのコンソール（F12）でエラーメッセージを確認してください
+
+### 音声が再生されない
+
+- ブラウザがWeb Speech APIに対応しているか確認してください（Chrome/Edge推奨）
+- ブラウザの音声設定を確認してください
+- 原稿欄にテキストが入力されているか確認してください
+
+### プロジェクトが保存されない
+
+- LocalStorageが有効になっているか確認してください（プライベートブラウジングモードでは無効）
+- ブラウザのストレージ上限（5-10MB）を超えていないか確認してください
+- ブラウザのコンソール（F12）でエラーメッセージを確認してください
+
+### Edge Tracking Prevention警告
+
+CDNリソース（React, PDF.js等）へのアクセス時にMicrosoft Edgeが警告を表示する場合がありますが、これは正常な動作です。実際のリソース読み込みには影響しません。
+
+---
+
+## バックエンド版との違い
+
+| 機能 | スタンドアロン版 | バックエンド版 |
+|------|------------------|----------------|
+| サーバー | 不要 | FastAPI（ローカル） |
+| 音声合成 | Web Speech API（リアルタイム） | Edge TTS（MP3ファイル生成） |
+| 動画生成 | 不可 | FFmpeg（WebM/MP4） |
+| 原稿保存 | LocalStorage | inputフォルダ（ファイルシステム） |
+| 動作環境 | ブラウザのみ | Python 3.10 + FFmpeg |
+
+バックエンド版の詳細は [docs/README.md](https://github.com/J1921604/Slide-Voice-Maker/blob/main/docs/README.md) を参照してください。
+
+---
+
+## 開発者向け情報
+
+### アーキテクチャ
+
+```mermaid
+flowchart TB
+    subgraph ブラウザ
+        HTML[index.html]
+        REACT[React 18]
+        PDFJS[PDF.js 3.11]
+        SPEECHAPI[Web Speech API]
+        PPTX[PptxGenJS]
+        LS[LocalStorage]
+    end
+
+    subgraph ユーザー入力
+        PDF[PDFファイル]
+        CSV[原稿CSV]
+    end
+
+    subgraph 出力
+        CSVOUT[原稿.csv]
+        PPTXOUT[presentation.pptx]
+    end
+
+    PDF --> HTML
+    CSV --> HTML
+    HTML --> REACT
+    REACT --> PDFJS
+    REACT --> SPEECHAPI
+    REACT --> PPTX
+    REACT --> LS
+    REACT --> CSVOUT
+    REACT --> PPTXOUT
 ```
 
-## 📊 パフォーマンス改善
+### 技術スタック
 
-### 最新の最適化（1.0.0）
+- **React 18**: UIフレームワーク（CDN: unpkg.com）
+- **Babel Standalone**: JSX/ES6+トランスパイル
+- **PDF.js 3.11**: PDFレンダリング
+- **PptxGenJS**: PowerPoint生成
+- **Tailwind CSS**: スタイリング
+- **Web Speech API**: ブラウザ標準TTS
 
-- **FPS 30fps**: 字幕切り替わりを確実にするため30fpsに変更（従来15fps）
-- **全CPUコア活用**: FFmpegスレッド数の制限を解除し、全コア並列処理
-- **字幕最小セグメント時間**: 0.15秒に設定し、確実に切り替わるよう改善
-- **VP8デフォルト**: 高速エンコードのためVP8をデフォルト有効化
+### ディレクトリ構造
 
-### 動画生成が遅い場合
-
-```bash
-# VP8コーデック使用（デフォルト有効）
-set USE_VP8=1
-
-# 解像度を下げる
-set OUTPUT_MAX_WIDTH=960
-set SLIDE_RENDER_SCALE=1.0
-
-# FPSを下げる（ただし字幕切り替わりに影響する可能性あり）
-set OUTPUT_FPS=20
+```
+Slide-Voice-Maker/
+├── index.html          # スタンドアロン版（React + PDF.js + Web Speech API）
+├── README.md           # このファイル（スタンドアロン版）
+├── docs/               # バックエンド版ドキュメント
+│   ├── README.md       # バックエンド版README
+│   ├── 完全仕様書.md   # 詳細仕様書
+│   └── DEPLOY_GUIDE.md # デプロイガイド
+├── specs/              # プロジェクト仕様
+│   └── 001-Slide-Voice-Maker/
+│       ├── spec.md     # 機能仕様
+│       ├── plan.md     # 開発計画
+│       └── tasks.md    # タスク管理
+├── src/                # バックエンド版Pythonコード
+│   ├── main.py         # CLI版メインスクリプト
+│   ├── server.py       # FastAPIサーバー
+│   └── processor.py    # 動画生成処理
+└── tests/              # テストコード
+    └── e2e/            # E2Eテスト
 ```
 
-## 🐛 トラブルシューティング
+---
 
-### 文字化けする場合
+## リンク
 
-原稿CSVをUTF-8（BOM付き）で保存してください。メモ帳の場合：
-- 「名前を付けて保存」→ 文字コード: `UTF-8 (BOM付き)`
+- **リポジトリ**: https://github.com/J1921604/Slide-Voice-Maker
+- **GitHub Pages**: https://j1921604.github.io/Slide-Voice-Maker/
+- **完全仕様書**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/docs/完全仕様書.md
+- **仕様 (spec)**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/specs/001-Slide-Voice-Maker/spec.md
+- **計画 (plan)**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/specs/001-Slide-Voice-Maker/plan.md
+- **タスク (tasks)**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/specs/001-Slide-Voice-Maker/tasks.md
 
-### FFmpegエラー
+---
 
-imageio-ffmpegが自動でFFmpegをダウンロードしますが、問題がある場合：
-
-```bash
-pip install --upgrade imageio-ffmpeg
-```
-
-### 音声が生成されない
-
-Edge TTSはインターネット接続が必要です。ネットワークを確認してください。
-
-### バックエンドが検出されない
-
-サーバーを起動してください：
-
-```powershell
-# ワンクリック起動
-powershell -ExecutionPolicy Bypass -File start.ps1
-
-# または手動起動
-py -3.10 -m uvicorn src.server:app --host 127.0.0.1 --port 8000
-```
-
-## 📚 ドキュメント
-
-| ドキュメント | 説明 |
-|-------------|------|
-| [完全仕様書](https://github.com/J1921604/Slide-Voice-Maker/blob/main/docs/%E5%AE%8C%E5%85%A8%E4%BB%95%E6%A7%98%E6%9B%B8.md) | 詳細な機能仕様 |
-| [spec.md](https://github.com/J1921604/Slide-Voice-Maker/blob/main/specs/001-Slide-Voice-Maker/spec.md) | 機能仕様書 |
-| [plan.md](https://github.com/J1921604/Slide-Voice-Maker/blob/main/specs/001-Slide-Voice-Maker/plan.md) | 実装計画 |
-| [tasks.md](https://github.com/J1921604/Slide-Voice-Maker/blob/main/specs/001-Slide-Voice-Maker/tasks.md) | タスク一覧 |
-
-## 🌐 GitHub Pages（静的UI）
-
-Actionsが `dist` をデプロイし、静的な `index.html` をGitHub Pagesで公開します。バックエンドAPIはローカルサーバー（`start.ps1` / `py -3.10 -m uvicorn src.server:app`）で動かしてください。
-
-手動でPages用アーティファクトを作る場合:
-
-```bash
-mkdir -p dist
-cp index.html dist/
-cp -r docs dist/docs
-cp -r specs dist/specs
-cp README.md dist/README.md
-```
-
-その後、`actions/upload-pages-artifact` と `actions/deploy-pages` で公開されます（`.github/workflows/pages.yml` 参照）。
-
-## 📄 ライセンス
+## ライセンス
 
 MIT License
 
-## 🙏 クレジット
+---
 
-- [Edge TTS](https://github.com/rany2/edge-tts) - Microsoft Edge音声合成
-- [PyMuPDF](https://pymupdf.readthedocs.io/) - PDF処理
-- [MoviePy](https://zulko.github.io/moviepy/) - 動画編集（フォールバック用）
-- [FastAPI](https://fastapi.tiangolo.com/) - Webフレームワーク
+## 更新履歴
+
+### 1.0.0 (2026-01-05)
+
+- 初回リリース（スタンドアロン版）
+- PDF入力、CSV入力、音声再生、PPTX出力、LocalStorage保存機能を実装

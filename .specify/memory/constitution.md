@@ -254,7 +254,32 @@ flowchart LR
 
 ## プロダクト機能仕様
 
-### 機能一覧
+### バージョン体系
+
+本プロジェクトは2つのバージョンを提供する:
+
+| バージョン | ファイル | 説明 |
+|------------|----------|------|
+| **スタンドアロン版** | `index.html` | サーバー不要、ブラウザのみで動作（Web Speech API） |
+| **バックエンド版** | `src/server.py` + `index.html` | Python FastAPI + Edge TTS + FFmpegで動画生成 |
+
+### スタンドアロン版機能一覧
+
+```mermaid
+flowchart TD
+    A[PDF入力] --> B[ブラウザ内でPDF→画像変換]
+    B --> C[スライド展開]
+    C --> D[原稿CSV入力]
+    D --> E[LocalStorageに自動保存]
+    C --> F[音声再生 Web Speech API]
+    F --> G[リアルタイムTTS再生]
+    C --> H[PPTX出力]
+    H --> I[PptxGenJSでダウンロード]
+    E --> J[原稿CSV出力]
+    J --> K[CSVダウンロード]
+```
+
+### バックエンド版機能一覧
 
 PDFとCSVをinput/フォルダに保存し、Edge TTSで実際のAI音声を生成する。
 
