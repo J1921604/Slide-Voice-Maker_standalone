@@ -1,8 +1,8 @@
-# Slide Voice Maker 憲法
+﻿# Slide Voice Maker 憲法
 
 **バージョン**: 1.0.0  
 **日付**: 2026-1-5  
-**リポジトリ**: https://github.com/J1921604/Slide-Voice-Maker
+**リポジトリ**: https://github.com/J1921604/Slide-Voice-Maker_standalone
 
 ## コア原則
 

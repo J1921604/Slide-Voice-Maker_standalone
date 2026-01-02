@@ -1,8 +1,8 @@
-# デプロイガイド（スタンドアロン版）
+﻿# デプロイガイド（スタンドアロン版）
 
 **バージョン**: 1.0.0  
 **日付**: 2026-1-5  
-**リポジトリ**: https://github.com/J1921604/Slide-Voice-Maker
+**リポジトリ**: https://github.com/J1921604/Slide-Voice-Maker_standalone
 
 ---
 
@@ -35,7 +35,7 @@ flowchart LR
 2. ワークフローは `index.html`, `input/`, `docs/`, `specs/`, `README.md` を `dist/` にコピーし、GitHub Pagesへ公開します
 3. 公開URLは Actions 実行ログの `page_url` を参照してください
 
-**公開URL**: https://j1921604.github.io/Slide-Voice-Maker/
+**公開URL**: https://j1921604.github.io/Slide-Voice-Maker_standalone/
 
 ### 手動トリガー
 
@@ -44,22 +44,6 @@ flowchart LR
 ---
 
 ## ローカル実行
-
-### ワンクリック起動（推奨）
-
-#### Windows（バッチファイル）
-```batch
-run.bat
-```
-
-#### Windows（PowerShell）
-```powershell
-.\run.ps1
-```
-
-どちらも `index.html` をデフォルトブラウザで開きます。
-
-### 手動で開く
 
 エクスプローラーで `index.html` をダブルクリックするだけで動作します。
 
@@ -139,8 +123,8 @@ run.bat
 
 ## リンク
 
-- **GitHub Repository**: https://github.com/J1921604/Slide-Voice-Maker
-- **GitHub Pages**: https://j1921604.github.io/Slide-Voice-Maker/
-- **完全仕様書**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/docs/完全仕様書.md
-- **README**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/README.md
-- **タスク一覧**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/specs/001-Slide-Voice-Maker/tasks.md
+- **GitHub Repository**: https://github.com/J1921604/Slide-Voice-Maker_standalone
+- **GitHub Pages**: https://j1921604.github.io/Slide-Voice-Maker_standalone/
+- **完全仕様書**: https://github.com/J1921604/Slide-Voice-Maker_standalone/blob/main/docs/完全仕様書.md
+- **README**: https://github.com/J1921604/Slide-Voice-Maker_standalone/blob/main/README.md
+- **タスク一覧**: https://github.com/J1921604/Slide-Voice-Maker_standalone/blob/main/specs/001-Slide-Voice-Maker/tasks.md

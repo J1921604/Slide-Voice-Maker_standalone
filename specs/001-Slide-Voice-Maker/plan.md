@@ -1,10 +1,10 @@
-# 実装計画: Slide Voice Maker
+﻿# 実装計画: Slide Voice Maker
 
 **ブランチ**: `001-Slide-Voice-Maker`  
 **日付**: 2026-1-5  
 **バージョン**: 1.0.0  
-**リポジトリ**: https://github.com/J1921604/Slide-Voice-Maker  
-**仕様**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/specs/001-Slide-Voice-Maker/spec.md
+**リポジトリ**: https://github.com/J1921604/Slide-Voice-Maker_standalone  
+**仕様**: https://github.com/J1921604/Slide-Voice-Maker_standalone/blob/main/specs/001-Slide-Voice-Maker/spec.md
 
 ## 概要
 
@@ -236,7 +236,7 @@ stateDiagram-v2
 
 ## Phase 2: 実装
 
-タスク詳細は https://github.com/J1921604/Slide-Voice-Maker/blob/main/specs/001-Slide-Voice-Maker/tasks.md を参照。
+タスク詳細は https://github.com/J1921604/Slide-Voice-Maker_standalone/blob/main/specs/001-Slide-Voice-Maker/tasks.md を参照。
 
 ## 検証計画
 
@@ -258,8 +258,8 @@ stateDiagram-v2
 
 ## リンク
 
-- **GitHub Repository**: https://github.com/J1921604/Slide-Voice-Maker
-- **GitHub Pages**: https://j1921604.github.io/Slide-Voice-Maker/
-- **完全仕様書**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/docs/完全仕様書.md
-- **README**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/README.md
-- **タスク一覧**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/specs/001-Slide-Voice-Maker/tasks.md
+- **GitHub Repository**: https://github.com/J1921604/Slide-Voice-Maker_standalone
+- **GitHub Pages**: https://j1921604.github.io/Slide-Voice-Maker_standalone/
+- **完全仕様書**: https://github.com/J1921604/Slide-Voice-Maker_standalone/blob/main/docs/完全仕様書.md
+- **README**: https://github.com/J1921604/Slide-Voice-Maker_standalone/blob/main/README.md
+- **タスク一覧**: https://github.com/J1921604/Slide-Voice-Maker_standalone/blob/main/specs/001-Slide-Voice-Maker/tasks.md

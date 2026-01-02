@@ -1,10 +1,10 @@
-# タスク一覧: Slide Voice Maker
+﻿# タスク一覧: Slide Voice Maker
 
 **入力**: `/specs/001-Slide-Voice-Maker/` からの設計ドキュメント  
 **前提条件**: plan.md（必須）、spec.md（必須）  
 **バージョン**: 1.0.0  
 **開始日**: 2026-1-5  
-**リポジトリ**: https://github.com/J1921604/Slide-Voice-Maker
+**リポジトリ**: https://github.com/J1921604/Slide-Voice-Maker_standalone
 
 ## 形式: `[ID] [P?] [ストーリー?] 説明`
 
@@ -90,10 +90,10 @@ gantt
 **目標**: 全ドキュメントをスタンドアロン版のみに統一、バージョン・日付統一、リンク修正
 
 - [x] T013 [P] README.mdをスタンドアロン版に統一（バージョン1.0.0、日付2026-1-5）
-- [ ] T014 [P] docs/完全仕様書.mdをスタンドアロン版に統一（バックエンド版削除）
-- [ ] T015 [P] specs/001-Slide-Voice-Maker/{spec,plan}.mdを統一（リンクはGitHub URLへ）
+- [x] T014 [P] docs/完全仕様書.mdをスタンドアロン版に統一（バックエンド版削除）
+- [x] T015 [P] specs/001-Slide-Voice-Maker/{spec,plan}.mdを統一（リンクはGitHub URLへ）
 
-**チェックポイント**: ドキュメント更新完了
+**チェックポイント**: ドキュメント更新完了 ✅
 
 ---
 
@@ -177,8 +177,8 @@ flowchart TD
 | 項目 | 数値 |
 |------|------|
 | 総タスク数 | 21 |
-| 完了 | 17 |
-| 未着手 | 4 |
+| 完了 | 19 |
+| 未着手 | 2 |
 
 ---
 
@@ -201,6 +201,6 @@ flowchart TD
 
 ## リンク
 
-- **GitHub Repository**: https://github.com/J1921604/Slide-Voice-Maker
-- **GitHub Pages**: https://j1921604.github.io/Slide-Voice-Maker/
-- **完全仕様書**: https://github.com/J1921604/Slide-Voice-Maker/blob/main/docs/完全仕様書.md
+- **GitHub Repository**: https://github.com/J1921604/Slide-Voice-Maker_standalone
+- **GitHub Pages**: https://j1921604.github.io/Slide-Voice-Maker_standalone/
+- **完全仕様書**: https://github.com/J1921604/Slide-Voice-Maker_standalone/blob/main/docs/完全仕様書.md
