@@ -32,12 +32,6 @@ gantt
     section Phase 3 Tests
     T009-T012 E2Eテスト実装                    :done, p3, after p2, 1d
 
-    section Phase 4 Docs
-    T013-T015 ドキュメント更新                  :active, p4, after p3, 1d
-
-    section Phase 5 Deployment
-    T016-T018 GitHub Pages設定                 :done, p5, after p4, 1d
-    T019-T021 Git操作                          :p6, after p5, 1d
 ```
 
 ---
@@ -85,51 +79,12 @@ gantt
 
 ---
 
-## Phase 4: ドキュメント更新（優先度: P0）
-
-**目標**: 全ドキュメントをスタンドアロン版のみに統一、バージョン・日付統一、リンク修正
-
-- [x] T013 [P] README.mdをスタンドアロン版に統一（バージョン1.0.0、日付2026-1-5）
-- [x] T014 [P] docs/完全仕様書.mdをスタンドアロン版に統一（バックエンド版削除）
-- [x] T015 [P] specs/001-Slide-Voice-Maker/{spec,plan}.mdを統一（リンクはGitHub URLへ）
-
-**チェックポイント**: ドキュメント更新完了 ✅
-
----
-
-## Phase 5: GitHub Pages設定（優先度: P0）
-
-**目標**: GitHub Actionsでindex.htmlを自動デプロイ
-
-- [x] T016 .github/workflows/pages.yml作成
-- [x] T017 index.html自動デプロイ設定
-- [x] T018 ワークフローテスト実行
-
-**チェックポイント**: GitHub Pages自動デプロイ完了 ✅
-
----
-
-## Phase 6: Git操作（優先度: P0）
-
-**目標**: 全変更をコミット・プッシュして完了
-
-- [x] T019 git pull実行（リモート同期）
-- [x] T020 全変更コミット（.github/copilot-commit-message-instructions.md準拠）
-- [x] T021 git push実行
-
-**チェックポイント**: 全変更コミット・プッシュ完了 🎉
-
----
-
 ### フェーズ依存関係
 
 ```mermaid
 flowchart TD
     P1[Phase 1<br>セットアップ] --> P2[Phase 2<br>スタンドアロン実装]
     P2 --> P3[Phase 3<br>E2E]
-    P3 --> P4[Phase 4<br>ドキュメント更新]
-    P4 --> P5[Phase 5<br>GitHub Pages]
-    P5 --> P6[Phase 6<br>Git操作]
 ```
 
 ### ユーザーストーリー依存関係
@@ -144,7 +99,6 @@ flowchart TD
 | Phase 1 | T002, T003 |
 | Phase 2 | T004-T008 |
 | Phase 3 | T009-T011 |
-| Phase 4 | T013-T015 |
 
 ---
 
@@ -155,11 +109,6 @@ flowchart TD
 1. Phase 1: セットアップ完了 ✅
 2. Phase 2: スタンドアロン版実装 ✅
 3. Phase 3: E2Eテスト実装・実行 ✅
-4. Phase 4: ドキュメント更新（進行中）
-5. Phase 5: GitHub Pages設定 ✅
-6. Phase 6: Git操作でコミット・プッシュ
-7. **停止して検証**: スタンドアロン版を独立してテスト
-8. 準備ができたらデプロイ/デモ
 
 ### インクリメンタルデリバリー
 
@@ -168,17 +117,6 @@ flowchart TD
 3. Web Speech API追加 → 独立してテスト → デプロイ/デモ ✅
 4. PPTX出力追加 → 独立してテスト → デプロイ/デモ ✅
 5. E2Eテスト追加 → 独立してテスト → デプロイ/デモ ✅
-6. ドキュメント更新 → GitHub Pagesデプロイ
-
----
-
-## タスク進捗サマリー
-
-| 項目 | 数値 |
-|------|------|
-| 総タスク数 | 21 |
-| 完了 | 21 |
-| 未着手 | 0 |
 
 ---
 
@@ -196,8 +134,16 @@ flowchart TD
 
 1. すべてのタスクが完了状態になっていること
 2. E2Eテスト（T009-T012）が成功すること
-3. ドキュメント更新（T013-T015）が完了すること
-4. Git操作（T019-T021）が完了すること
+
+## タスク進捗サマリー
+
+| 項目 | 数値 |
+|------|------|
+| 総タスク数 | 12 |
+| 完了 | 12 |
+| 未着手 | 0 |
+
+---
 
 ## リンク
 
