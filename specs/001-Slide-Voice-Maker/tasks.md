@@ -114,8 +114,8 @@ gantt
 **目標**: 全変更をコミット・プッシュして完了
 
 - [x] T019 git pull実行（リモート同期）
-- [ ] T020 全変更コミット（.github/copilot-commit-message-instructions.md準拠）
-- [ ] T021 git push実行
+- [x] T020 全変更コミット（.github/copilot-commit-message-instructions.md準拠）
+- [x] T021 git push実行
 
 **チェックポイント**: 全変更コミット・プッシュ完了 🎉
 
@@ -177,8 +177,8 @@ flowchart TD
 | 項目 | 数値 |
 |------|------|
 | 総タスク数 | 21 |
-| 完了 | 19 |
-| 未着手 | 2 |
+| 完了 | 21 |
+| 未着手 | 0 |
 
 ---
 
