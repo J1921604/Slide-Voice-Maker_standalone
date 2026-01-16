@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slide Voice Maker - スタンドアロン（ブラウザTTS）</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://unpkg.com/pptxgenjs/dist/pptxgen.bundle.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans JP', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0b0f16; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #f97316; border-radius: 3px; }
+        @keyframes aurora-1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(24px, -18px) scale(1.12); } }
+        @keyframes aurora-2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-18px, 14px) scale(1.18); } }
+        .animate-aurora-1 { animation: aurora-1 16s infinite ease-in-out; }
+        .animate-aurora-2 { animation: aurora-2 20s infinite ease-in-out; }
+        .loading-spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .metal-panel {
+            background: linear-gradient(135deg, #0d0f14 0%, #12141c 45%, #0b0c11 100%);
+            border: 1px solid rgba(249, 115, 22, 0.25);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04), 0 0 25px rgba(249, 115, 22, 0.12);
+        }
+        .orange-glow {
+            box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.3), 0 10px 25px rgba(249, 115, 22, 0.22);
+        }
+        .bg-grid {
+            background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 1px, transparent 0);
+            background-size: 36px 36px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950">
+    <div id="root"></div>
+    
+    <script type="text/babel" data-presets="env,react">
+        const { useState, useRef, useEffect, useMemo } = React;
+
+        // 完全ブラウザ単独動作モード（サーバー不要）
+        const STANDALONE_MODE = true;
+
+        // Icons
+        const Upload = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>;
+        const FileText = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
+        const Play = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>;
+        const Square = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>;
+        const Video = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>;
+        const Download = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
+        const Volume2 = () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>;
+        const HelpCircle = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+        const X = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+        const ChevronLeft = () => <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>;
+        const ChevronRight = () => <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
+        const Loader2 = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>;
+        const Wand2 = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>;
+
+        // 字幕セグメント分割
+        const getSubtitleSegments = (script) => {
+            if (!script) return [];
+            const rawSegments = script.split(/([。、！？!?\n]+)/).filter(s => s.trim().length > 0);
+            const mergedSegments = [];
+            for (let i = 0; i < rawSegments.length; i += 2) {
+                const text = rawSegments[i];
+                const punctuation = rawSegments[i + 1] || "";
+                mergedSegments.push(text + punctuation);
+            }
+            const totalChars = mergedSegments.reduce((acc, s) => acc + s.length, 0);
+            let charCountAccumulator = 0;
+            return mergedSegments.map(text => {
+                const startRatio = charCountAccumulator / totalChars;
+                charCountAccumulator += text.length;
+                const endRatio = charCountAccumulator / totalChars;
+                return { text, startRatio, endRatio };
+            });
+        };
+
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        const fetchJson = async (url, options = {}, timeoutMs = 2000) => {
+            const ctrl = new AbortController();
+            const t = setTimeout(() => ctrl.abort(), timeoutMs);
+            try {
+                const res = await fetch(url, { ...options, signal: ctrl.signal });
+                if (!res.ok) {
+                    const text = await res.text().catch(() => '');
+                    throw new Error(`${res.status} ${res.statusText}${text ? `: ${text}` : ''}`);
+                }
+                return await res.json();
+            } finally {
+                clearTimeout(t);
+            }
+        };
+
+        // PlayerOverlay
+        const PlayerOverlay = ({ currentSlide, audioRef, isPlaying }) => {
+            const [currentSubtitle, setCurrentSubtitle] = useState("");
+            const subtitleSegments = useMemo(() => getSubtitleSegments(currentSlide?.script), [currentSlide]);
+            
+            useEffect(() => {
+                const audio = audioRef.current;
+                if (!audio) return;
+                const handleTimeUpdate = () => {
+                    if (!currentSlide?.audio) { setCurrentSubtitle(""); return; }
+                    const duration = audio.duration;
+                    const currentTime = audio.currentTime;
+                    if (!duration || !isFinite(duration)) return;
+                    const currentRatio = currentTime / duration;
+                    const activeSegment = subtitleSegments.find(seg => currentRatio >= seg.startRatio && currentRatio < seg.endRatio);
+                    if (activeSegment) setCurrentSubtitle(activeSegment.text);
+                    else if (currentRatio >= 1 && subtitleSegments.length > 0) setCurrentSubtitle(subtitleSegments[subtitleSegments.length - 1].text);
+                };
+                audio.addEventListener('timeupdate', handleTimeUpdate);
+                return () => audio.removeEventListener('timeupdate', handleTimeUpdate);
+            }, [audioRef, currentSlide, subtitleSegments]);
+            
+            return (
+                <div className="w-full h-[56px] bg-transparent border-t border-amber-500/20 flex items-end justify-center px-4 pb-2 transition-colors duration-300 flex-shrink-0">
+                    <div className="max-w-[min(92vw,56rem)] px-4 py-2 rounded-md bg-black/60 backdrop-blur-sm text-amber-100 text-base md:text-lg font-bold text-center leading-snug shadow-xl shadow-amber-500/25 border border-amber-500/25">
+                        {currentSubtitle}
+                    </div>
+                </div>
+            );
+        };
+
+        // Main App
+        function SlideVoiceMaker() {
+            const [slides, setSlides] = useState([]);
+            const [scripts, setScripts] = useState([]);
+            const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+            const [pdfLoading, setPdfLoading] = useState(false);
+            const [showHelp, setShowHelp] = useState(false);
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [pdfFile, setPdfFile] = useState(null);
+            const [csvFile, setCsvFile] = useState(null);
+            const [statusMessage, setStatusMessage] = useState('');
+            
+            // スタンドアロンモード用状態
+            const [savedPdfName, setSavedPdfName] = useState('');
+            const [isSpeaking, setIsSpeaking] = useState(false);
+            const [speechRate, setSpeechRate] = useState(1.0);
+            const [speechVoice, setSpeechVoice] = useState(null);
+            const [availableVoices, setAvailableVoices] = useState([]);
+            const audioRef = useRef(null);
+            const fileInputRef = useRef(null);
+            const csvInputRef = useRef(null);
+            const speechSynthRef = useRef(null);
+
+            // Web Speech API初期化
+            useEffect(() => {
+                if (!('speechSynthesis' in window)) {
+                    console.warn('Web Speech APIがこのブラウザではサポートされていません');
+                    return;
+                }
+                
+                const loadVoices = () => {
+                    const voices = window.speechSynthesis.getVoices();
+                    const jaVoices = voices.filter(v => v.lang.startsWith('ja'));
+                    setAvailableVoices(jaVoices.length > 0 ? jaVoices : voices);
+                    if (jaVoices.length > 0 && !speechVoice) {
+                        setSpeechVoice(jaVoices[0]);
+                    }
+                };
+                
+                loadVoices();
+                if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                    window.speechSynthesis.onvoiceschanged = loadVoices;
+                }
+            }, []);
+
+            // 初期画面でデフォルトファイルを自動読み込み（LocalStorageから復元、なければデフォルトファイル）
+            useEffect(() => {
+                const loadDefaultFiles = async () => {
+                    // まずLocalStorageから復元を試みる
+                    try {
+                        const saved = localStorage.getItem('slideVoiceMaker_project');
+                        if (saved) {
+                            const project = JSON.parse(saved);
+                            setSavedPdfName(project.pdfName || '');
+                            const newSlides = project.slides.map((s, index) => ({
+                                id: crypto.randomUUID(),
+                                image: s.image,
+                                script: s.script || '',
+                                audio: null,
+                                isGenerating: false
+                            }));
+                            setSlides(newSlides);
+                            setActiveSlideIndex(0);
+                            setStatusMessage(`前回のプロジェクトを復元しました（${newSlides.length}スライド）`);
+                            return;
+                        }
+                    } catch (err) {
+                        console.warn('LocalStorageからの復元に失敗:', err);
+                    }
+
+                    // LocalStorageになければデフォルトファイルを読み込み
+                    try {
+                        setStatusMessage('デフォルトファイルを読み込み中...');
+                        
+                        // デフォルトPDFを読み込み
+                        const pdfResponse = await fetch('input/AIドリブン開発・教育体制の構築.pdf');
+                        if (!pdfResponse.ok) throw new Error('デフォルトPDFが見つかりません');
+                        const pdfBlob = await pdfResponse.blob();
+                        const pdfArrayBuffer = await pdfBlob.arrayBuffer();
+                        
+                        // PDFを画像に変換
+                        const images = await convertPdfToImages(pdfArrayBuffer);
+                        const newSlides = images.map((image, index) => ({
+                            id: crypto.randomUUID(),
+                            image: image,
+                            script: '',
+                            audio: null,
+                            isGenerating: false
+                        }));
+                        setSlides(newSlides);
+                        setActiveSlideIndex(0);
+                        setSavedPdfName('AIドリブン開発・教育体制の構築.pdf');
+                        
+                        // デフォルトCSVを読み込み
+                        const csvResponse = await fetch('input/原稿.csv');
+                        if (!csvResponse.ok) throw new Error('デフォルトCSVが見つかりません');
+                        const csvBlob = await csvResponse.blob();
+                        const csvArrayBuffer = await csvBlob.arrayBuffer();
+                        
+                        // CSVをパース
+                        const parsedScripts = await parseCSVFromBuffer(csvArrayBuffer);
+                        const scriptMap = {};
+                        parsedScripts.forEach(item => {
+                            scriptMap[item.index] = item.script;
+                        });
+                        
+                        setSlides(prev => prev.map((slide, i) => ({
+                            ...slide,
+                            script: scriptMap[i] || ''
+                        })));
+                        
+                        setStatusMessage(`デフォルトファイル読み込み完了（${newSlides.length}スライド）`);
+                    } catch (err) {
+                        console.warn('デフォルトファイルの読み込みに失敗しました:', err);
+                        setStatusMessage('デフォルトファイルを読み込めませんでした。PDFとCSVを手動でアップロードしてください。');
+                    }
+                };
+                
+                loadDefaultFiles();
+            }, []);
+
+            // Web Speech API音声読み上げ
+            const speakText = (text) => {
+                if (!text || !text.trim()) return;
+                
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = speechRate;
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
+                if (speechVoice) {
+                    utterance.voice = speechVoice;
+                }
+                
+                utterance.onstart = () => setIsSpeaking(true);
+                utterance.onend = () => setIsSpeaking(false);
+                utterance.onerror = () => setIsSpeaking(false);
+                
+                speechSynthRef.current = utterance;
+                window.speechSynthesis.speak(utterance);
+            };
+
+            const stopSpeaking = () => {
+                window.speechSynthesis.cancel();
+                setIsSpeaking(false);
+            };
+
+            // LocalStorageでプロジェクト保存
+            const saveProjectToLocalStorage = () => {
+                const project = {
+                    pdfName: savedPdfName,
+                    slides: slides.map(s => ({
+                        image: s.image,
+                        script: s.script
+                    })),
+                    timestamp: Date.now()
+                };
+                try {
+                    localStorage.setItem('slideVoiceMaker_project', JSON.stringify(project));
+                    setStatusMessage('プロジェクトをブラウザに保存しました');
+                } catch (e) {
+                    setStatusMessage(`保存失敗: ${e.message}`);
+                }
+            };
+
+            const loadProjectFromLocalStorage = () => {
+                try {
+                    const saved = localStorage.getItem('slideVoiceMaker_project');
+                    if (!saved) {
+                        setStatusMessage('保存されたプロジェクトがありません');
+                        return;
+                    }
+                    const project = JSON.parse(saved);
+                    setSavedPdfName(project.pdfName || '');
+                    const newSlides = project.slides.map((s, index) => ({
+                        id: crypto.randomUUID(),
+                        image: s.image,
+                        script: s.script || '',
+                        audio: null,
+                        isGenerating: false
+                    }));
+                    setSlides(newSlides);
+                    setActiveSlideIndex(0);
+                    setStatusMessage(`プロジェクトを読み込みました（${newSlides.length}スライド）`);
+                } catch (e) {
+                    setStatusMessage(`読み込み失敗: ${e.message}`);
+                }
+            };
+
+            const refreshOutputFiles = async () => {
+                // スタンドアロンモードでは不要
+            };
+
+            const shortenOutputLabel = (name) => {
+                return name || '';
+            };
+
+            const downloadSelectedVideo = () => {
+                setStatusMessage('スタンドアロンモードでは動画出力はサポートされていません');
+            };
+
+            // PPTX出力（ブラウザで生成してダウンロード）
+            const exportPptx = async () => {
+                if (slides.length === 0) {
+                    setStatusMessage('スライドがありません');
+                    return;
+                }
+                const pdfBaseName = savedPdfName ? savedPdfName.replace(/\.pdf$/i, '') : 'slides';
+
+                const PptxGenJS = window.PptxGenJS;
+                if (!PptxGenJS) {
+                    setStatusMessage('PPTXライブラリが読み込まれていません（PptxGenJS）');
+                    return;
+                }
+
+                try {
+                    setStatusMessage('PPTXを書き出し中...');
+                    const pptx = new PptxGenJS();
+                    pptx.layout = 'LAYOUT_WIDE';
+
+                    // 16:9 (13.333 x 7.5)
+                    const W = 13.333;
+                    const H = 7.5;
+
+                    slides.forEach((s, i) => {
+                        const slide = pptx.addSlide();
+                        if (s && s.image) {
+                            slide.addImage({ data: s.image, x: 0, y: 0, w: W, h: H });
+                        }
+                        const note = (s && s.script) ? String(s.script) : '';
+                        if (note) {
+                            slide.addNotes(note);
+                        }
+                    });
+
+                    await pptx.writeFile({ fileName: `${pdfBaseName}.pptx` });
+                    setStatusMessage(`PPTX出力完了: ${pdfBaseName}.pptx`);
+                } catch (e) {
+                    setStatusMessage(`PPTX出力失敗: ${e.message}`);
+                }
+            };
+
+            // 原稿CSV出力
+            const downloadCsv = () => {
+                if (slides.length === 0) {
+                    setStatusMessage('スライドがありません');
+                    return;
+                }
+                const lines = ['index,script'];
+                slides.forEach((slide, i) => {
+                    const escaped = (slide.script || '').replace(/"/g, '""');
+                    lines.push(`${i},"${escaped}"`);
+                });
+                const csvContent = '\uFEFF' + lines.join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '原稿.csv';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                setStatusMessage('原稿CSVをダウンロードしました');
+            };
+
+            // 再生速度をaudioRefに適用（不要だがコード互換性のため残す）
+            useEffect(() => {
+                // スタンドアロンモードでは音声ファイル再生は使わない
+            }, [activeSlideIndex]);
+
+            // PDF to Images (arrayBufferを直接受け取る)
+            const convertPdfToImages = async (arrayBuffer) => {
+                const pdfjsLib = window.pdfjsLib;
+                if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                }
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                const images = [];
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 2.0 });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    await page.render({ canvasContext: context, viewport }).promise;
+                    images.push(canvas.toDataURL('image/png'));
+                }
+                return images;
+            };
+
+            // CSV Parser (文字化け対処・マルチライン対応) - arrayBufferを直接受け取る
+            const parseCSVFromBuffer = async (buf) => {
+                const encodings = ['utf-8', 'utf-8-sig', 'shift_jis', 'euc-jp', 'iso-2022-jp'];
+
+                const decodeWith = (encoding) => {
+                    try {
+                        const dec = new TextDecoder(encoding, { fatal: false });
+                        return dec.decode(buf);
+                    } catch (_) {
+                        return null;
+                    }
+                };
+
+                // RFC 4180最小対応（複数行セル/エスケープ引用符）
+                const parseText = (text) => {
+                    const rows = [];
+                    let row = [];
+                    let field = '';
+                    let inQuotes = false;
+
+                    for (let i = 0; i < text.length; i++) {
+                        const ch = text[i];
+                        const next = text[i + 1];
+
+                        if (ch === '"') {
+                            if (inQuotes && next === '"') {
+                                field += '"';
+                                i++;
+                            } else {
+                                inQuotes = !inQuotes;
+                            }
+                            continue;
+                        }
+
+                        if (!inQuotes && (ch === ',' || ch === '\n' || ch === '\r')) {
+                            row.push(field);
+                            field = '';
+
+                            if (ch === ',') {
+                                continue;
+                            }
+
+                            if (ch === '\r' && next === '\n') i++;
+                            rows.push(row);
+                            row = [];
+                            continue;
+                        }
+
+                        field += ch;
+                    }
+
+                    if (field.length > 0 || row.length > 0) {
+                        row.push(field);
+                        rows.push(row);
+                    }
+
+                    if (rows.length === 0) return [];
+
+                    const header = rows[0].map(v => (v || '').trim().toLowerCase());
+                    const idxCol = header.indexOf('index');
+                    const scriptCol = header.indexOf('script');
+                    if (idxCol === -1 || scriptCol === -1) return [];
+
+                    const scripts = [];
+                    for (let r = 1; r < rows.length; r++) {
+                        const cols = rows[r];
+                        if (!cols || cols.length === 0) continue;
+                        const idxRaw = cols[idxCol];
+                        const scriptRaw = cols[scriptCol];
+                        const idx = Number.parseInt(String(idxRaw ?? '').trim(), 10);
+                        if (Number.isNaN(idx)) continue;
+                        const script = String(scriptRaw ?? '').trim();
+                        scripts.push({ index: idx, script });
+                    }
+                    return scripts;
+                };
+
+                for (const encoding of encodings) {
+                    const text = decodeWith(encoding);
+                    if (!text) continue;
+
+                    const replacementCount = (text.match(/\uFFFD/g) || []).length;
+                    if (replacementCount > 0 && replacementCount / Math.max(text.length, 1) > 0.001) {
+                        continue;
+                    }
+
+                    const scripts = parseText(text);
+                    if (scripts.length > 0) return scripts;
+                }
+
+                throw new Error('CSVの文字コードを認識できませんでした（UTF-8/Shift_JIS等を確認してください）');
+            };
+
+            // Handle PDF Upload
+            const handlePdfUpload = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                setPdfFile(file);
+                setPdfLoading(true);
+                setStatusMessage('PDF読み込み中...');
+                try {
+                    // ファイル参照が失効する前にarrayBufferを先に取得
+                    const arrayBuffer = await file.arrayBuffer();
+                    
+                    // PDFファイル名を記録
+                    setSavedPdfName(file.name);
+
+                    const images = await convertPdfToImages(arrayBuffer);
+                    const newSlides = images.map((image, index) => ({
+                        id: crypto.randomUUID(),
+                        image,
+                        script: scripts[index]?.script || '',
+                        audio: null,
+                        isGenerating: false
+                    }));
+                    setSlides(newSlides);
+                    setActiveSlideIndex(0);
+                    setStatusMessage(`${images.length}ページのPDFを読み込みました`);
+                } catch (error) {
+                    setStatusMessage(`PDF読み込み失敗: ${error.message}`);
+                } finally {
+                    setPdfLoading(false);
+                }
+            };
+
+            // Handle CSV Upload
+            const handleCsvUpload = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                setCsvFile(file);
+                setStatusMessage('原稿CSV読み込み中...');
+                try {
+                    // ファイル参照が失効する前にarrayBufferを先に取得
+                    const arrayBuffer = await file.arrayBuffer();
+
+                    // arrayBufferからCSVをパース
+                    const parsedScripts = await parseCSVFromBuffer(arrayBuffer);
+                    setScripts(parsedScripts);
+                    
+                    // スライドがあれば原稿を適用
+                    if (slides.length > 0) {
+                        setSlides(prev => prev.map((slide, index) => ({
+                            ...slide,
+                            script: parsedScripts.find(s => s.index === index)?.script || slide.script,
+                            audio: null
+                        })));
+                    }
+                    setStatusMessage(`${parsedScripts.length}件の原稿を読み込みました`);
+                } catch (error) {
+                    setStatusMessage(`CSV読み込み失敗: ${error.message}`);
+                } finally {
+                    // 同じファイルを再度選択できるようにinputをリセット
+                    if (csvInputRef.current) csvInputRef.current.value = '';
+                }
+            };
+
+            // Generate All Audio (ブラウザTTSでプレビュー音声生成)
+            const generateAllAudio = async () => {
+                setStatusMessage('スタンドアロンモードでは音声ファイル生成はサポートされていません。代わりにブラウザTTS再生ボタンをご利用ください。');
+            };
+
+            // Generate Single Slide Audio (ブラウザTTS音声読み上げ)
+            const generateSlideAudio = async (slideIndex) => {
+                const slide = slides[slideIndex];
+                if (!slide.script || slide.script.trim() === '') {
+                    setStatusMessage('原稿が入力されていません。');
+                    return;
+                }
+                speakText(slide.script);
+            };
+
+            // Generate Video (スタンドアロンモードでは非サポート)
+            const generateVideo = async () => {
+                setStatusMessage('スタンドアロン版（index.html単独）では動画生成はサポートされていません。');
+            };
+
+            // Update script
+            const updateScript = (index, newScript) => {
+                setSlides(prev => {
+                    const newSlides = [...prev];
+                    newSlides[index] = { ...newSlides[index], script: newScript, audio: null };
+                    return newSlides;
+                });
+            };
+
+            // 自動保存（原稿編集時）
+            useEffect(() => {
+                if (slides.length > 0) {
+                    saveProjectToLocalStorage();
+                }
+            }, [slides]);
+
+            const activeSlide = slides[activeSlideIndex];
+
+            return (
+                <div className="h-screen bg-[#080b10] bg-grid text-slate-100 flex flex-col overflow-hidden">
+                    
+                    {/* Header */}
+                    <header className="h-16 metal-panel backdrop-blur-md border-b border-white/10 flex items-center justify-between px-6 z-20 whitespace-nowrap">
+                        <div className="flex items-center gap-3 flex-nowrap min-w-0">
+                            <div className="w-9 h-9 bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 rounded-lg flex items-center justify-center shadow-lg shadow-amber-500/30">
+                                <Video />
+                            </div>
+                            <h1 className="font-bold text-2xl text-amber-200 drop-shadow">Slide Voice Maker</h1>
+                            <button onClick={() => setShowHelp(true)} className="ml-2 text-amber-300 hover:text-white">
+                                <HelpCircle />
+                            </button>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 flex-nowrap overflow-x-auto">
+                            {/* PDF入力ボタン */}
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black rounded-lg text-sm whitespace-nowrap border border-amber-300/60 shadow-lg shadow-amber-500/30"
+                                title="PDFをアップロードしてスライドを展開します"
+                            >
+                                <Upload /> PDF入力
+                            </button>
+                            <input type="file" ref={fileInputRef} onChange={handlePdfUpload} accept=".pdf" className="hidden" />
+
+                            {/* 原稿CSV入力ボタン */}
+                            <button
+                                onClick={() => csvInputRef.current?.click()}
+                                className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm whitespace-nowrap border border-amber-500/30"
+                                title="原稿.csv入力"
+                            >
+                                <FileText /> 原稿CSV入力
+                            </button>
+                            <input type="file" ref={csvInputRef} onChange={handleCsvUpload} accept=".csv" className="hidden" />
+                            
+                            <div className="h-6 w-px bg-white/10 mx-1" />
+                            
+                            {/* 音声読み上げボタン（ブラウザTTS） */}
+                            <button
+                                onClick={() => {
+                                    if (isSpeaking) {
+                                        stopSpeaking();
+                                    } else {
+                                        if (activeSlide && activeSlide.script) {
+                                            speakText(activeSlide.script);
+                                        } else {
+                                            setStatusMessage('原稿が入力されていません');
+                                        }
+                                    }
+                                }}
+                                disabled={!activeSlide || !activeSlide.script}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                                    isSpeaking 
+                                        ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/30' 
+                                        : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed'
+                                }`}
+                                title={isSpeaking ? '音声停止' : '現在のスライドの原稿をブラウザTTSで読み上げ'}
+                            >
+                                {isSpeaking ? <><Square /> 停止</> : <><Volume2 /> TTS再生</>}
+                            </button>
+
+                            {/* 音声速度（TTS） */}
+                            <select
+                                value={speechRate}
+                                onChange={(e) => setSpeechRate(parseFloat(e.target.value))}
+                                className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-amber-200 rounded-lg text-sm whitespace-nowrap border border-amber-500/30 cursor-pointer"
+                                title="TTS読み上げ速度"
+                            >
+                                <option value="0.5">0.5x</option>
+                                <option value="0.75">0.75x</option>
+                                <option value="1">1.0x</option>
+                                <option value="1.25">1.25x</option>
+                                <option value="1.5">1.5x</option>
+                                <option value="1.75">1.75x</option>
+                                <option value="2">2.0x</option>
+                            </select>
+
+                            <div className="h-6 w-px bg-white/10 mx-1" />
+
+                            {/* 原稿CSV出力ボタン */}
+                            <button
+                                onClick={downloadCsv}
+                                className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-amber-200 rounded-lg text-sm whitespace-nowrap border border-amber-500/30"
+                                title="編集した原稿をCSVでダウンロード"
+                            >
+                                <Download /> CSV出力
+                            </button>
+
+                            {/* PPTX出力ボタン */}
+                            <button
+                                onClick={exportPptx}
+                                disabled={slides.length === 0}
+                                className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-amber-200 rounded-lg text-sm whitespace-nowrap border border-amber-500/30 disabled:opacity-50"
+                                title="現在のスライド画像をPPTXとしてダウンロード（ブラウザ生成）"
+                            >
+                                <Download /> PPTX出力
+                            </button>
+                        </div>
+                    </header>
+                    
+                    {/* Status Message */}
+                    {statusMessage && (
+                        <div className="bg-slate-900/70 border-b border-amber-500/20 px-6 py-2 text-sm text-amber-200">
+                            {statusMessage}
+                        </div>
+                    )}
+                    
+                    {/* Main Content */}
+                    <div className="flex-1 flex overflow-hidden">
+                        {/* Sidebar */}
+                        <div className="w-64 metal-panel border-r border-amber-500/25 flex flex-col">
+                            <div className="p-4 border-b border-amber-500/25">
+                                <h2 className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                                    Slides ({slides.length})
+                                </h2>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
+                                {slides.length === 0 && (
+                                    <div className="text-center text-slate-500 text-sm px-3 py-6 border border-dashed border-amber-500/30 rounded-lg">
+                                        PDFをアップロードするとスライドがここに表示されます。
+                                    </div>
+                                )}
+                                {slides.map((slide, index) => (
+                                    <div key={slide.id} className={`w-full p-2 rounded-lg transition-all border ${
+                                        activeSlideIndex === index
+                                            ? 'bg-slate-900 border-amber-500/50 shadow-md shadow-amber-500/25'
+                                            : 'hover:bg-slate-900/70 border-transparent hover:border-amber-500/30'
+                                    }`}>
+                                        <button
+                                            onClick={() => setActiveSlideIndex(index)}
+                                            className="w-full text-left"
+                                        >
+                                            <div className="flex gap-3">
+                                                <div className="relative w-16 aspect-video bg-[#0b0f16] rounded overflow-hidden border border-amber-500/30 flex-shrink-0">
+                                                    <img src={slide.image} className="w-full h-full object-cover" alt={`Slide ${index + 1}`} />
+                                                    {slide.isGenerating && (
+                                                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                                            <Loader2 className="loading-spinner text-white" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                    <span className="text-sm font-medium text-amber-200 truncate">Slide {index + 1}</span>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className="text-[10px] flex items-center gap-1 text-orange-400"><FileText /> Script</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </button>
+                                        {/* スライド個別のTTS再生ボタン */}
+                                        <div className="flex gap-1 mt-2">
+                                            <button
+                                                onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    setActiveSlideIndex(index);
+                                                    setTimeout(() => {
+                                                        if (slides[index].script && slides[index].script.trim()) {
+                                                            speakText(slides[index].script);
+                                                        } else {
+                                                            setStatusMessage('原稿が入力されていません');
+                                                        }
+                                                    }, 100);
+                                                }}
+                                                disabled={!slides[index].script || !slides[index].script.trim()}
+                                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:bg-slate-700 disabled:text-slate-500 text-white text-[10px] rounded"
+                                                title="このスライドの原稿をTTS再生"
+                                            >
+                                                <Volume2 className="w-3 h-3" />
+                                                TTS
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        {/* Preview Area */}
+                        <div className="flex-1 flex flex-col bg-[#080b10] relative overflow-hidden">
+                            <div className="flex-1 flex flex-col min-h-0">
+                                <div className="flex-1 bg-[#0b0f16] relative flex items-center justify-center p-4">
+                                    <div className="relative w-full h-full max-w-5xl flex flex-col items-center justify-center group">
+                                        <div className="shadow-2xl rounded-lg border border-amber-500/25 bg-[#0b0c12] flex flex-col flex-shrink-1 min-h-0">
+                                                        {/* 画像 + 再生ボタンは相対配置コンテナ内にまとめる */}
+                                                        <div className="relative rounded-lg overflow-hidden">
+                                                            {activeSlide ? (
+                                                                        <img src={activeSlide?.image} className="max-w-full max-h-[calc(100vh-440px)] object-contain mx-auto" alt="Slide Preview" />
+                                                            ) : (
+                                                                        <div className="w-[720px] h-[405px] flex items-center justify-center text-slate-600 text-sm border border-dashed border-amber-500/25 rounded-lg">
+                                                                    PDFをアップロードしてプレビューを表示
+                                                                </div>
+                                                            )}
+                                            </div>
+
+                                            {/* SLIDE番号（画像に重ならないよう、画像の下に配置） */}
+                                            <div className="mx-3 my-3 flex items-center justify-center gap-3 px-3 py-2 rounded-md bg-slate-900/70 border border-amber-500/25 text-sm font-mono text-amber-200 backdrop-blur-sm">
+                                                <span className="text-amber-100">SLIDE {String(activeSlideIndex + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Navigation */}
+                                    <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none">
+                                        <button
+                                            onClick={() => setActiveSlideIndex(Math.max(0, activeSlideIndex - 1))}
+                                            disabled={activeSlideIndex === 0}
+                                            className="pointer-events-auto p-3 rounded-full bg-slate-900/50 hover:bg-slate-800 text-slate-300 backdrop-blur-sm transition-all disabled:opacity-0"
+                                        >
+                                            <ChevronLeft />
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveSlideIndex(Math.min(slides.length - 1, activeSlideIndex + 1))}
+                                            disabled={activeSlideIndex === slides.length - 1}
+                                            className="pointer-events-auto p-3 rounded-full bg-slate-900/50 hover:bg-slate-800 text-slate-300 backdrop-blur-sm transition-all disabled:opacity-0"
+                                        >
+                                            <ChevronRight />
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <PlayerOverlay currentSlide={activeSlide} audioRef={audioRef} isPlaying={isPlaying} />
+                            </div>
+                            
+                            {/* Script Editor */}
+                            <div className="h-[200px] bg-[#0d1119] flex flex-col flex-shrink-0 border-t border-amber-500/20">
+                                <div className="flex items-center justify-between px-4 py-2 border-b border-amber-500/20 bg-slate-900/60">
+                                    <span className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+                                        <FileText /> Narration Script
+                                    </span>
+                                    <span className="text-xs text-amber-200/70">{activeSlide?.script?.length || 0} characters</span>
+                                </div>
+                                <textarea
+                                    value={activeSlide?.script || ""}
+                                    onChange={(e) => updateScript(activeSlideIndex, e.target.value)}
+                                    className="flex-1 bg-[#0b0f16] p-4 text-amber-100 text-lg leading-relaxed resize-none focus:outline-none focus:bg-slate-900/60 transition-colors"
+                                    placeholder="ここに読み上げ原稿を入力してください..."
+                                    disabled={slides.length === 0}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Help Modal */}
+                    {showHelp && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+                                <div className="flex items-center justify-between p-6 border-b border-white/10">
+                                    <h3 className="text-xl font-bold text-white">🔮 使い方ガイド</h3>
+                                    <button onClick={() => setShowHelp(false)} className="text-slate-400 hover:text-white"><X /></button>
+                                </div>
+                                <div className="p-6 space-y-4">
+                                    <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-lg p-4 border border-amber-500/30">
+                                        <p className="text-sm text-amber-100 font-semibold">🌐 スタンドアロン版（index.html単独・サーバー不要）</p>
+                                        <p className="text-xs text-slate-300 mt-1">本ツールはindex.htmlをブラウザで開くだけで動作します。音声はブラウザ標準のTTS（Web Speech API）でリアルタイム再生します。編集内容は自動的にLocalStorageに保存されます。</p>
+                                        <ul className="mt-2 text-[11px] text-slate-200/90 space-y-1">
+                                            <li>・音声ファイル生成：不可（再生のみ）</li>
+                                            <li>・動画生成：不可</li>
+                                            <li>・自動保存：LocalStorage（ブラウザ内5-10MB制限）</li>
+                                        </ul>
+                                    </div>
+                                    <div className="bg-slate-800/50 rounded-lg p-4 border border-white/5">
+                                        <h4 className="font-bold text-violet-400 mb-2">[STEP 1] PDFアップロード</h4>
+                                        <p className="text-sm text-slate-300">ヘッダー左の「PDF入力」ボタンからPDFをアップロードすると、ブラウザでスライドを展開します。</p>
+                                    </div>
+                                    <div className="bg-slate-800/50 rounded-lg p-4 border border-white/5">
+                                        <h4 className="font-bold text-violet-400 mb-2">[STEP 2] 原稿CSV入力</h4>
+                                        <p className="text-sm text-slate-300">「index,script」形式のCSVを読み込むと、各スライドに原稿が割り当てられます。UTF-8/Shift_JIS対応。</p>
+                                    </div>
+                                    <div className="bg-slate-800/50 rounded-lg p-4 border border-white/5">
+                                        <h4 className="font-bold text-violet-400 mb-2">[STEP 3] TTS音声読み上げ</h4>
+                                        <p className="text-sm text-slate-300">「TTS再生」ボタンで、現在のスライドの原稿をブラウザのTTSエンジンで読み上げます。速度調整も可能です。</p>
+                                    </div>
+                                    <div className="bg-slate-800/50 rounded-lg p-4 border border-white/5">
+                                        <h4 className="font-bold text-violet-400 mb-2">[STEP 4] エクスポート</h4>
+                                        <p className="text-sm text-slate-300">「CSV出力」で編集済み原稿をダウンロード。「PPTX出力」でスライドをPowerPoint形式で保存できます。</p>
+                                    </div>
+                                    <div className="bg-slate-800/50 rounded-lg p-4 border border-white/5">
+                                        <h4 className="font-bold text-red-400 mb-2">⚠️ 制限事項</h4>
+                                        <p className="text-sm text-slate-300">スタンドアロン版はブラウザTTSのリアルタイム再生のみ対応します。音声ファイル生成・動画生成は対応していません。</p>
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-slate-950 border-t border-white/5 flex justify-end">
+                                    <button onClick={() => setShowHelp(false)} className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg">閉じる</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                </div>
+            );
+        }
+
+        // Render
+        ReactDOM.createRoot(document.getElementById('root')).render(<SlideVoiceMaker />);
+    </script>
+</body>
+</html>
